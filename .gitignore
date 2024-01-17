@@ -1,0 +1,14 @@
+
+.vs/
+
+NTDLS.Persistence/bin/
+
+NTDLS.Persistence/obj/
+
+TestHarness/bin/
+
+TestHarness/obj/
+
+NTDLS.DelegateThreadPool/bin/
+
+NTDLS.DelegateThreadPool/obj/
