@@ -24,10 +24,10 @@
     <PackageReleaseNotes>
       Added optional serialization encryption provider.
     </PackageReleaseNotes>
-    <AssemblyVersion>1.0.0</AssemblyVersion>
-    <FileVersion>1.0.0</FileVersion>
-    <VersionPrefix>1.0.0</VersionPrefix>
-    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.1</AssemblyVersion>
+    <FileVersion>1.0.1</FileVersion>
+    <VersionPrefix>1.0.1</VersionPrefix>
+    <Version>1.0.1</Version>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>Active thread pool where work items can be queued as delegate functions.</Description>
   </PropertyGroup>
