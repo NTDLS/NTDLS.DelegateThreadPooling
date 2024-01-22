@@ -66,6 +66,28 @@ namespace NTDLS.DelegateThreadPool
         }
 
         /// <summary>
+        /// Adds additional threads to the thread pool.
+        /// </summary>
+        /// <param name="additionalThreads">The number of threads to add.</param>
+        /// <exception cref="Exception"></exception>
+        public void Grow(int additionalThreads)
+        {
+            if (_keepRunning == false)
+            {
+                throw new Exception("The thread pool is not running.");
+            }
+
+            ThreadCount += additionalThreads;
+
+            for (int i = 0; i < additionalThreads; i++)
+            {
+                var thread = new Thread(InternalThreadProc);
+                _threads.Add(thread);
+                thread.Start();
+            }
+        }
+
+        /// <summary>
         /// Creates a QueueItemState collection. This allows you to keep track of a set
         /// of items that have been queued so that you can wait on them to complete.
         /// </summary>
@@ -132,7 +154,14 @@ namespace NTDLS.DelegateThreadPool
 
                 if (queueToken != null)
                 {
-                    queueToken.ThreadAction();
+                    try
+                    {
+                        queueToken.ThreadAction();
+                    }
+                    catch (Exception ex)
+                    {
+                        queueToken.SetException(ex);
+                    }
                     queueToken.SetComplete();
                 }
 

@@ -16,6 +16,17 @@
         /// </summary>
         public bool IsComplete { get; private set; }
 
+
+        /// <summary>
+        /// Is set to true if an exception occured when executing the delegate command. Check Exception for details.
+        /// </summary>
+        public bool ExceptionOccured { get; private set; }
+
+        /// <summary>
+        /// Is set if an exception occured when executing the delegate command, otherwise null.
+        /// </summary>
+        public Exception? Exception { get; private set; }
+
         internal QueueItemState(DelegateThreadPool ownerThreadPool, DelegateThreadPool.ThreadAction threadAction)
         {
             OwnerThreadPool = ownerThreadPool;
@@ -26,6 +37,12 @@
         {
             IsComplete = true;
             _queueWaitEvent.Set();
+        }
+
+        internal void SetException(Exception ex)
+        {
+            Exception = ex;
+            ExceptionOccured = true;
         }
 
         /// <summary>

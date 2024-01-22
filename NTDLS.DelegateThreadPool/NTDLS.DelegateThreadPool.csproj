@@ -23,10 +23,11 @@
     <PackageTags>serialization;disk;persistence</PackageTags>
     <PackageReleaseNotes>
       Added default thread count, support for aborting queued items and changing spin and wait times.
+      Added exception handling and thread count growth.
     </PackageReleaseNotes>
-    <AssemblyVersion>1.1.0</AssemblyVersion>
-    <FileVersion>1.1.0</FileVersion>
-    <VersionPrefix>1.1.0</VersionPrefix>
+    <AssemblyVersion>1.1.1</AssemblyVersion>
+    <FileVersion>1.1.1</FileVersion>
+    <VersionPrefix>1.1.1</VersionPrefix>
     <Version>1.1.0</Version>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>Active thread pool where work items can be queued as delegate functions.</Description>
