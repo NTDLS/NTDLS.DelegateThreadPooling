@@ -31,7 +31,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// The number of times to repeatedly check the internal lock availability before going to going to sleep.
         /// </summary>
-        public int SpinCount { get; set; } = 100000;
+        public int SpinCount { get; set; } = 10000;
 
         /// <summary>
         /// The number of milliseconds to wait for queued items after each expiration of SpinCount.
@@ -249,6 +249,7 @@ namespace NTDLS.DelegateThreadPooling
         private void InternalThreadProc()
         {
             uint tryCount = 0;
+            bool pessimisticWaiting = false;
 
             while (KeepRunning)
             {
@@ -268,6 +269,8 @@ namespace NTDLS.DelegateThreadPooling
 
                 if (queueToken != null)
                 {
+                    pessimisticWaiting = false;
+
                     try
                     {
                         if (queueToken.ThreadAction != null)
@@ -286,10 +289,14 @@ namespace NTDLS.DelegateThreadPooling
                     queueToken.SetComplete();
                 }
 
-                if (tryCount++ == SpinCount)
+                if (pessimisticWaiting || tryCount++ == SpinCount)
                 {
                     tryCount = 0;
-                    _itemQueuedWaitEvent.WaitOne(WaitDuration);
+                    pessimisticWaiting = true;
+                    if (_itemQueuedWaitEvent.WaitOne(WaitDuration))
+                    {
+                        pessimisticWaiting = false;
+                    }
                 }
             }
         }
@@ -303,4 +310,3 @@ namespace NTDLS.DelegateThreadPooling
         }
     }
 }
-
