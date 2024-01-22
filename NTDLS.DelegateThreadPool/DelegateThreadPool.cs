@@ -13,6 +13,12 @@ namespace NTDLS.DelegateThreadPool
         public delegate void ThreadAction();
 
         /// <summary>
+        /// The delegate prototype for the work queue.
+        /// </summary>
+        /// <param name="parameter">The user supplied parameter that will be passed to the delegate function.</param>
+        public delegate void ParameterizedThreadAction(object? parameter);
+
+        /// <summary>
         /// The maximum number of items that can be in the queue at a time. Additional calls to enqueue will block.
         /// </summary>
         public int MaxQueueDepth { get; set; }
@@ -173,6 +179,51 @@ namespace NTDLS.DelegateThreadPool
         }
 
         /// <summary>
+        /// Enqueues a work item into the thread pool.
+        /// </summary>
+        /// <param name="parameter">User supplied parameter that will be passed to the delegate function.</param>
+        /// <param name="parameterizedThreadAction">The delegate function to execute when a thread is ready.</param>
+        /// <returns>Returns a token item that allows you to wait on completion or determine when the work item has been processed</returns>
+        public QueueItemState Enqueue(object? parameter, ParameterizedThreadAction parameterizedThreadAction)
+        {
+            //Enforce max queue depth size.
+            if (MaxQueueDepth > 0)
+            {
+                uint tryCount = 0;
+
+                while (KeepRunning)
+                {
+                    int queueSize = _actions.Use(o => o.Count);
+                    if (queueSize < MaxQueueDepth)
+                    {
+                        break;
+                    }
+
+                    if (tryCount++ == SpinCount)
+                    {
+                        tryCount = 0;
+                        //Wait for a small amount of time or until the event is signaled (which 
+                        //indicates that an item has been dequeued thefrby creating free space).
+                        _itemDequeuedWaitEvent.WaitOne(WaitDuration);
+                    }
+                }
+
+                if (KeepRunning == false)
+                {
+                    throw new Exception("The thread pool is shutting down.");
+                }
+            }
+
+            return _actions.Use(o =>
+            {
+                var queueToken = new QueueItemState(this, parameter, parameterizedThreadAction);
+                o.Enqueue(queueToken);
+                _itemQueuedWaitEvent.Set();
+                return queueToken;
+            });
+        }
+
+        /// <summary>
         /// Cancels a given queued worker item. 
         /// </summary>
         /// <param name="item"></param>
@@ -219,7 +270,14 @@ namespace NTDLS.DelegateThreadPool
                 {
                     try
                     {
-                        queueToken.ThreadAction();
+                        if (queueToken.ThreadAction != null)
+                        {
+                            queueToken.ThreadAction();
+                        }
+                        else if (queueToken.ParameterizedThreadAction != null)
+                        {
+                            queueToken.ParameterizedThreadAction(queueToken.Parameter);
+                        }
                     }
                     catch (Exception ex)
                     {

@@ -1,6 +1,4 @@
-﻿using System.Threading;
-
-namespace NTDLS.DelegateThreadPool
+﻿namespace NTDLS.DelegateThreadPool
 {
     /// <summary>
     /// Contains information to track the state of an enqueued worker item and allows for waiting on it to complete.
@@ -9,15 +7,20 @@ namespace NTDLS.DelegateThreadPool
     {
         private readonly AutoResetEvent _queueWaitEvent = new(false);
 
-        internal DelegateThreadPool.ThreadAction ThreadAction { get; private set; }
+        internal DelegateThreadPool.ThreadAction? ThreadAction { get; private set; }
+        internal DelegateThreadPool.ParameterizedThreadAction? ParameterizedThreadAction { get; private set; }
 
         internal DelegateThreadPool OwnerThreadPool { get; private set; }
+
+        /// <summary>
+        /// The user-settable parameter that will be passed to the delegate function.
+        /// </summary>
+        public object? Parameter { get; set; }
 
         /// <summary>
         /// Denotes if the queued work item has been completed.
         /// </summary>
         public bool IsComplete { get; private set; }
-
 
         /// <summary>
         /// Is set to true if an exception occured when executing the delegate command. Check Exception for details.
@@ -29,10 +32,19 @@ namespace NTDLS.DelegateThreadPool
         /// </summary>
         public Exception? Exception { get; private set; }
 
+
         internal QueueItemState(DelegateThreadPool ownerThreadPool, DelegateThreadPool.ThreadAction threadAction)
         {
+            Parameter = null;
             OwnerThreadPool = ownerThreadPool;
             ThreadAction = threadAction;
+        }
+
+        internal QueueItemState(DelegateThreadPool ownerThreadPool, object? parameter, DelegateThreadPool.ParameterizedThreadAction parameterizedThreadAction)
+        {
+            Parameter = parameter;
+            OwnerThreadPool = ownerThreadPool;
+            ParameterizedThreadAction = parameterizedThreadAction;
         }
 
         internal void SetComplete()
