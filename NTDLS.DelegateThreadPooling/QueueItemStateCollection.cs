@@ -8,10 +8,15 @@ namespace NTDLS.DelegateThreadPooling
     public class QueueItemStateCollection
     {
         /// <summary>
-        /// The collection of enqueued work items.
+        /// The collection of enqueued work items and their states.
         /// </summary>
-        public List<QueueItemState> Collection { get; private set; } = new();
+        private readonly List<QueueItemState> _collection = new();
         private readonly DelegateThreadPool _threadPool;
+
+        /// <summary>
+        /// The number of items in the state collection.
+        /// </summary>
+        public int Count => _collection.Count;
 
         internal QueueItemStateCollection(DelegateThreadPool threadPool)
         {
@@ -25,8 +30,10 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState Enqueue(ThreadAction threadAction)
         {
+            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccured == false);
+
             var queueToken = _threadPool.Enqueue(threadAction);
-            Collection.Add(queueToken);
+            _collection.Add(queueToken);
             return queueToken;
         }
 
@@ -38,8 +45,10 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState Enqueue(object parameter, ParameterizedThreadAction parameterizedThreadAction)
         {
+            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccured == false);
+
             var queueToken = _threadPool.Enqueue(parameter, parameterizedThreadAction);
-            Collection.Add(queueToken);
+            _collection.Add(queueToken);
             return queueToken;
         }
 
@@ -49,7 +58,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public bool ExceptionOccured()
         {
-            return Collection.Any(o => o.ExceptionOccured);
+            return _collection.Any(o => o.ExceptionOccured);
         }
 
         /// <summary>
@@ -58,7 +67,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns>Returns true if all item were cancelled.</returns>
         public bool Abort()
         {
-            return Collection.All(o => o.Abort());
+            return _collection.All(o => o.Abort());
         }
 
         /// <summary>
@@ -66,7 +75,7 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         public void WaitForCompletion()
         {
-            while (_threadPool.KeepRunning && Collection.All(o => o.WaitForCompletion()) == false)
+            while (_threadPool.KeepRunning && _collection.All(o => o.WaitForCompletion()) == false)
             {
                 Thread.Yield();
             }

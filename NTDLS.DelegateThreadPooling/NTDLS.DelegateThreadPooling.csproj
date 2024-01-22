@@ -28,10 +28,11 @@
       Added parameterized delegate support.
       Added collection parametrization.
       Added collection exception handling.
+      Added collection pruning.
     </PackageReleaseNotes>
-    <AssemblyVersion>1.2.4</AssemblyVersion>
-    <FileVersion>1.2.4</FileVersion>
-    <VersionPrefix>1.2.4</VersionPrefix>
+    <AssemblyVersion>1.2.5</AssemblyVersion>
+    <FileVersion>1.2.5</FileVersion>
+    <VersionPrefix>1.2.5</VersionPrefix>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>High performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
   </PropertyGroup>
