@@ -22,11 +22,11 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>serialization;disk;persistence</PackageTags>
     <PackageReleaseNotes>
-      Added optional serialization encryption provider.
+      nuget updates.
     </PackageReleaseNotes>
-    <AssemblyVersion>1.0.1</AssemblyVersion>
-    <FileVersion>1.0.1</FileVersion>
-    <VersionPrefix>1.0.1</VersionPrefix>
+    <AssemblyVersion>1.0.2</AssemblyVersion>
+    <FileVersion>1.0.2</FileVersion>
+    <VersionPrefix>1.0.2</VersionPrefix>
     <Version>1.0.1</Version>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>Active thread pool where work items can be queued as delegate functions.</Description>
@@ -48,7 +48,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NTDLS.Semaphore" Version="3.1.1" />
+    <PackageReference Include="NTDLS.Semaphore" Version="3.3.0" />
   </ItemGroup>
 
 </Project>

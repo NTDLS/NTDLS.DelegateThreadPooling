@@ -18,7 +18,7 @@ namespace NTDLS.DelegateThreadPool
         public int ThreadCount { get; private set; }
 
         private readonly List<Thread> _threads = new();
-        private readonly PessimisticSemaphore<Queue<QueueItemState>> _actions = new();
+        private readonly PessimisticCriticalResource<Queue<QueueItemState>> _actions = new();
         private readonly AutoResetEvent _queueWaitEvent = new(true);
         private bool _keepRunning = false;
 
