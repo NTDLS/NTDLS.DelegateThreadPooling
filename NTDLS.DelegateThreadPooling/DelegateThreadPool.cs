@@ -1,6 +1,6 @@
 ﻿using NTDLS.Semaphore;
 
-namespace NTDLS.DelegateThreadPool
+namespace NTDLS.DelegateThreadPooling
 {
     /// <summary>
     /// Creates an active thread pool where work items can be queued as delegate functions.

@@ -1,4 +1,4 @@
-﻿namespace NTDLS.DelegateThreadPool
+﻿namespace NTDLS.DelegateThreadPooling
 {
     /// <summary>
     /// Contains information to track the state of an enqueued worker item and allows for waiting on it to complete.

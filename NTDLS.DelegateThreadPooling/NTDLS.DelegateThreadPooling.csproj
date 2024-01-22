@@ -10,15 +10,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationIcon>Image.ico</ApplicationIcon>
-    <Title>NTDLS.DelegateThreadPool</Title>
+    <Title>NTDLS.DelegateThreadPooling</Title>
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
-    <Product>NTDLS.DelegateThreadPool</Product>
+    <Product>NTDLS.DelegateThreadPooling</Product>
     <Copyright>Copyright © 2024 NetworkDLS</Copyright>
-    <PackageProjectUrl>https://github.com/NTDLS/NTDLS.DelegateThreadPool</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/NTDLS/NTDLS.DelegateThreadPooling</PackageProjectUrl>
     <PackageIcon>Logo.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <RepositoryUrl>https://github.com/NTDLS/NTDLS.DelegateThreadPool</RepositoryUrl>
+    <RepositoryUrl>https://github.com/NTDLS/NTDLS.DelegateThreadPooling</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>serialization;disk;persistence</PackageTags>
     <PackageReleaseNotes>

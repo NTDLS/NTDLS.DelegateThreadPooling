@@ -1,6 +1,6 @@
-﻿using static NTDLS.DelegateThreadPool.DelegateThreadPool;
+﻿using static NTDLS.DelegateThreadPooling.DelegateThreadPool;
 
-namespace NTDLS.DelegateThreadPool
+namespace NTDLS.DelegateThreadPooling
 {
     /// <summary>
     /// Contains a collection of queue tokens. Allows for determining when a set of queued items have been completed.

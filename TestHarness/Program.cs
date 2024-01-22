@@ -1,4 +1,4 @@
-﻿using NTDLS.DelegateThreadPool;
+﻿using NTDLS.DelegateThreadPooling;
 
 namespace TestHarness
 {
