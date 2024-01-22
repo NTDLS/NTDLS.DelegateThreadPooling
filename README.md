@@ -7,6 +7,7 @@ Allows you to easily enqueue infinite FIFO worker items or enforce queue size, w
 of those items to complete, and total control over the pool size. Also allows for multiple pools,
 so that different workloads do not interfere with one another.
 
+_If you have ever been frustrated with System.Threading.ThreadPool, then this is likely the solution you are looking for._
 
 ```cs
 private static readonly DelegateThreadPool _delegateThreadPool = new(10);
