@@ -14,7 +14,7 @@
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
     <Product>NTDLS.DelegateThreadPool</Product>
-    <Copyright>Copyright © 2023 NetworkDLS</Copyright>
+    <Copyright>Copyright © 2024 NetworkDLS</Copyright>
     <PackageProjectUrl>https://github.com/NTDLS/NTDLS.DelegateThreadPool</PackageProjectUrl>
     <PackageIcon>Logo.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -24,12 +24,13 @@
     <PackageReleaseNotes>
       Added default thread count, support for aborting queued items and changing spin and wait times.
       Added exception handling and thread count growth.
+      Added maximum queue depth enforcment.
     </PackageReleaseNotes>
-    <AssemblyVersion>1.1.1</AssemblyVersion>
-    <FileVersion>1.1.1</FileVersion>
-    <VersionPrefix>1.1.1</VersionPrefix>
+    <AssemblyVersion>1.2.1</AssemblyVersion>
+    <FileVersion>1.2.1</FileVersion>
+    <VersionPrefix>1.2.1</VersionPrefix>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
-    <Description>Active thread pool where work items can be queued as delegate functions.</Description>
+    <Description>High performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
   </PropertyGroup>
 
   <ItemGroup>

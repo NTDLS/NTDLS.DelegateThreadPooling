@@ -2,8 +2,11 @@
 
 📦 Be sure to check out the NuGet pacakge: https://www.nuget.org/packages/NTDLS.DelegateThreadPool
 
-Active thread pool where work items can be queued as delegate functions. Allows you to easily
-enqueue infinite FIFO worker items and wait on collections of those items to complete.
+High performance active thread pool where work items can be queued as delegate functions.
+Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections
+of those items to complete, and total control over the pool size. Also allows for multiple pools,
+so that different workloads do not interfere with one another.
+
 
 ```cs
 private static readonly DelegateThreadPool _delegateThreadPool = new(10);

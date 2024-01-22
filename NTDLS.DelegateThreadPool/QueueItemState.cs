@@ -1,4 +1,6 @@
-﻿namespace NTDLS.DelegateThreadPool
+﻿using System.Threading;
+
+namespace NTDLS.DelegateThreadPool
 {
     /// <summary>
     /// Contains information to track the state of an enqueued worker item and allows for waiting on it to complete.
@@ -65,14 +67,21 @@
         /// <returns></returns>
         public bool WaitForCompletion()
         {
-            int tries = 0;
-            while (IsComplete == false)
+            uint tryCount = 0;
+            while (OwnerThreadPool.KeepRunning && IsComplete == false)
             {
-                if ((++tries % OwnerThreadPool.SpinCount) == 0)
+                if (tryCount++ == OwnerThreadPool.SpinCount)
                 {
+                    tryCount = 0;
                     _queueWaitEvent.WaitOne(OwnerThreadPool.WaitDuration);
                 }
             }
+
+            if (OwnerThreadPool.KeepRunning == false)
+            {
+                throw new Exception("The thread pool is shutting down.");
+            }
+
             return true;
         }
     }

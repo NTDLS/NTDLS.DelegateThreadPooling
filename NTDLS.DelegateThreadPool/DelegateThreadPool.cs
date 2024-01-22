@@ -13,6 +13,11 @@ namespace NTDLS.DelegateThreadPool
         public delegate void ThreadAction();
 
         /// <summary>
+        /// The maximum number of items that can be in the queue at a time. Additional calls to enqueue will block.
+        /// </summary>
+        public int MaxQueueDepth { get; set; }
+
+        /// <summary>
         /// The number of threads in the thread pool.
         /// </summary>
         public int ThreadCount { get; private set; }
@@ -29,8 +34,9 @@ namespace NTDLS.DelegateThreadPool
 
         private readonly List<Thread> _threads = new();
         private readonly PessimisticCriticalResource<Queue<QueueItemState>> _actions = new();
-        private readonly AutoResetEvent _queueWaitEvent = new(true);
-        private bool _keepRunning = false;
+        private readonly AutoResetEvent _itemQueuedWaitEvent = new(true);
+        private readonly AutoResetEvent _itemDequeuedWaitEvent = new(true);
+        internal bool KeepRunning { get; private set; } = false;
 
         /// <summary>
         /// Starts n worker threads, where n is the number of CPU cores available to the operating system.
@@ -38,7 +44,31 @@ namespace NTDLS.DelegateThreadPool
         public DelegateThreadPool()
         {
             ThreadCount = Environment.ProcessorCount;
-            _keepRunning = true;
+            KeepRunning = true;
+
+            for (int i = 0; i < ThreadCount; i++)
+            {
+                var thread = new Thread(InternalThreadProc);
+                _threads.Add(thread);
+                thread.Start();
+            }
+        }
+
+        /// <summary>
+        /// Defines the pool size and starts the worker threads.
+        /// </summary>
+        /// <param name="threadCount">The number of threads to create.</param>
+        ///<param name="maxQueueDepth">The maximum number of items that can be queued before blocking. Zero indicates unlimited.</param>
+        public DelegateThreadPool(int threadCount, int maxQueueDepth)
+        {
+            if (maxQueueDepth < 0)
+            {
+                maxQueueDepth = 0;
+            }
+
+            ThreadCount = threadCount;
+            MaxQueueDepth = maxQueueDepth;
+            KeepRunning = true;
 
             for (int i = 0; i < ThreadCount; i++)
             {
@@ -55,7 +85,8 @@ namespace NTDLS.DelegateThreadPool
         public DelegateThreadPool(int threadCount)
         {
             ThreadCount = threadCount;
-            _keepRunning = true;
+            MaxQueueDepth = 0;
+            KeepRunning = true;
 
             for (int i = 0; i < ThreadCount; i++)
             {
@@ -72,7 +103,7 @@ namespace NTDLS.DelegateThreadPool
         /// <exception cref="Exception"></exception>
         public void Grow(int additionalThreads)
         {
-            if (_keepRunning == false)
+            if (KeepRunning == false)
             {
                 throw new Exception("The thread pool is not running.");
             }
@@ -104,11 +135,39 @@ namespace NTDLS.DelegateThreadPool
         /// <returns>Returns a token item that allows you to wait on completion or determine when the work item has been processed</returns>
         public QueueItemState Enqueue(ThreadAction threadAction)
         {
+            //Enforce max queue depth size.
+            if (MaxQueueDepth > 0)
+            {
+                uint tryCount = 0;
+
+                while (KeepRunning)
+                {
+                    int queueSize = _actions.Use(o => o.Count);
+                    if (queueSize < MaxQueueDepth)
+                    {
+                        break;
+                    }
+
+                    if (tryCount++ == SpinCount)
+                    {
+                        tryCount = 0;
+                        //Wait for a small amount of time or until the event is signaled (which 
+                        //indicates that an item has been dequeued thefrby creating free space).
+                        _itemDequeuedWaitEvent.WaitOne(WaitDuration);
+                    }
+                }
+
+                if (KeepRunning == false)
+                {
+                    throw new Exception("The thread pool is shutting down.");
+                }
+            }
+
             return _actions.Use(o =>
             {
                 var queueToken = new QueueItemState(this, threadAction);
                 o.Enqueue(queueToken);
-                _queueWaitEvent.Set();
+                _itemQueuedWaitEvent.Set();
                 return queueToken;
             });
         }
@@ -128,9 +187,9 @@ namespace NTDLS.DelegateThreadPool
         /// </summary>
         public void Stop()
         {
-            if (_keepRunning)
+            if (KeepRunning)
             {
-                _keepRunning = false;
+                KeepRunning = false;
                 _threads.ForEach(o => o.Join());
                 _threads.Clear();
             }
@@ -138,16 +197,20 @@ namespace NTDLS.DelegateThreadPool
 
         private void InternalThreadProc()
         {
-            int tryCount = 0;
+            uint tryCount = 0;
 
-            while (_keepRunning)
+            while (KeepRunning)
             {
                 var queueToken = _actions.Use(o =>
                 {
-                    o.TryDequeue(out var dequeued);
+                    if (o.TryDequeue(out var dequeued))
+                    {
+                        //Enqueue might be blocking due to enforcing max queue depth size, tell it that the queue size has decreased.
+                        _itemDequeuedWaitEvent.Set();
+                    }
                     if (dequeued?.IsComplete == true)
                     {
-                        return null; //Queued items where IsComplete == true have been aborted.
+                        return null; //Queued items where IsComplete == true have been aborted, just ignore them.
                     }
                     return dequeued;
                 });
@@ -165,9 +228,10 @@ namespace NTDLS.DelegateThreadPool
                     queueToken.SetComplete();
                 }
 
-                if ((++tryCount % SpinCount) == 0)
+                if (tryCount++ == SpinCount)
                 {
-                    _queueWaitEvent.WaitOne(WaitDuration);
+                    tryCount = 0;
+                    _itemQueuedWaitEvent.WaitOne(WaitDuration);
                 }
             }
         }

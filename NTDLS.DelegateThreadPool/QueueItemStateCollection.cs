@@ -44,9 +44,14 @@ namespace NTDLS.DelegateThreadPool
         /// </summary>
         public void WaitForCompletion()
         {
-            while (Collection.All(o => o.WaitForCompletion()) == false)
+            while (_threadPool.KeepRunning && Collection.All(o => o.WaitForCompletion()) == false)
             {
                 Thread.Yield();
+            }
+
+            if (_threadPool.KeepRunning == false)
+            {
+                throw new Exception("The thread pool is shutting down.");
             }
         }
     }
