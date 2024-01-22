@@ -17,21 +17,30 @@ namespace NTDLS.DelegateThreadPool
         /// </summary>
         public int ThreadCount { get; private set; }
 
+        /// <summary>
+        /// The number of times to repeatedly check the internal lock availability before going to going to sleep.
+        /// </summary>
+        public int SpinCount { get; set; } = 100000;
+
+        /// <summary>
+        /// The number of milliseconds to wait for queued items after each expiration of SpinCount.
+        /// </summary>
+        public int WaitDuration { get; set; } = 1;
+
         private readonly List<Thread> _threads = new();
         private readonly PessimisticCriticalResource<Queue<QueueItemState>> _actions = new();
         private readonly AutoResetEvent _queueWaitEvent = new(true);
         private bool _keepRunning = false;
 
         /// <summary>
-        /// Defines the pool size and starts the workr threads.
+        /// Starts n worker threads, where n is the number of CPU cores available to the operating system.
         /// </summary>
-        /// <param name="threadCount">The number of threads to create.</param>
-        public DelegateThreadPool(int threadCount)
+        public DelegateThreadPool()
         {
-            ThreadCount = threadCount;
+            ThreadCount = Environment.ProcessorCount;
             _keepRunning = true;
 
-            for (int i = 0; i < threadCount; i++)
+            for (int i = 0; i < ThreadCount; i++)
             {
                 var thread = new Thread(InternalThreadProc);
                 _threads.Add(thread);
@@ -40,7 +49,24 @@ namespace NTDLS.DelegateThreadPool
         }
 
         /// <summary>
-        /// Creates a queue token collection. This allows you to keep track of a set
+        /// Defines the pool size and starts the worker threads.
+        /// </summary>
+        /// <param name="threadCount">The number of threads to create.</param>
+        public DelegateThreadPool(int threadCount)
+        {
+            ThreadCount = threadCount;
+            _keepRunning = true;
+
+            for (int i = 0; i < ThreadCount; i++)
+            {
+                var thread = new Thread(InternalThreadProc);
+                _threads.Add(thread);
+                thread.Start();
+            }
+        }
+
+        /// <summary>
+        /// Creates a QueueItemState collection. This allows you to keep track of a set
         /// of items that have been queued so that you can wait on them to complete.
         /// </summary>
         /// <returns></returns>
@@ -58,11 +84,21 @@ namespace NTDLS.DelegateThreadPool
         {
             return _actions.Use(o =>
             {
-                var queueToken = new QueueItemState(threadAction);
+                var queueToken = new QueueItemState(this, threadAction);
                 o.Enqueue(queueToken);
                 _queueWaitEvent.Set();
                 return queueToken;
             });
+        }
+
+        /// <summary>
+        /// Cancels a given queued worker item. 
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns>Returns true if the item was cancelled.</returns>
+        public bool Abort(QueueItemState item)
+        {
+            return item.Abort();
         }
 
         /// <summary>
@@ -87,6 +123,10 @@ namespace NTDLS.DelegateThreadPool
                 var queueToken = _actions.Use(o =>
                 {
                     o.TryDequeue(out var dequeued);
+                    if (dequeued?.IsComplete == true)
+                    {
+                        return null; //Queued items where IsComplete == true have been aborted.
+                    }
                     return dequeued;
                 });
 
@@ -96,9 +136,9 @@ namespace NTDLS.DelegateThreadPool
                     queueToken.SetComplete();
                 }
 
-                if ((++tryCount % 10000) == 0)
+                if ((++tryCount % SpinCount) == 0)
                 {
-                    _queueWaitEvent.WaitOne(1);
+                    _queueWaitEvent.WaitOne(WaitDuration);
                 }
             }
         }

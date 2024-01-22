@@ -31,6 +31,15 @@ namespace NTDLS.DelegateThreadPool
         }
 
         /// <summary>
+        /// Cancels all queued worker items.
+        /// </summary>
+        /// <returns>Returns true if all item were cancelled.</returns>
+        public bool Abort()
+        {
+            return Collection.All(o => o.Abort());
+        }
+
+        /// <summary>
         /// Blocks until all work items in the collection have been processed by a thread.
         /// </summary>
         public void WaitForCompletion()

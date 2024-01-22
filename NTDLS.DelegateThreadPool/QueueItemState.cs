@@ -7,20 +7,18 @@
     {
         private readonly AutoResetEvent _queueWaitEvent = new(false);
 
-        internal DelegateThreadPool.ThreadAction ThreadAction { get;  set; }
+        internal DelegateThreadPool.ThreadAction ThreadAction { get; private set; }
+
+        internal DelegateThreadPool OwnerThreadPool { get; private set; }
 
         /// <summary>
         /// Denotes if the queued work item has been completed.
         /// </summary>
         public bool IsComplete { get; private set; }
 
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="threadAction"></param>
-        public QueueItemState(DelegateThreadPool.ThreadAction threadAction)
+        internal QueueItemState(DelegateThreadPool ownerThreadPool, DelegateThreadPool.ThreadAction threadAction)
         {
+            OwnerThreadPool = ownerThreadPool;
             ThreadAction = threadAction;
         }
 
@@ -28,6 +26,20 @@
         {
             IsComplete = true;
             _queueWaitEvent.Set();
+        }
+
+        /// <summary>
+        /// Cancels the queued worker item. 
+        /// </summary>
+        /// <returns>Returns true if the item was cancelled.</returns>
+        public bool Abort()
+        {
+            if (IsComplete == false)
+            {
+                SetComplete();
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -39,9 +51,9 @@
             int tries = 0;
             while (IsComplete == false)
             {
-                if ((++tries % 10000) == 0)
+                if ((++tries % OwnerThreadPool.SpinCount) == 0)
                 {
-                    _queueWaitEvent.WaitOne(1);
+                    _queueWaitEvent.WaitOne(OwnerThreadPool.WaitDuration);
                 }
             }
             return true;

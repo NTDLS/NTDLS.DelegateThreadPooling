@@ -4,7 +4,7 @@ namespace TestHarness
 {
     internal class Program
     {
-        private static readonly DelegateThreadPool _delegateThreadPool = new(10);
+        private static readonly DelegateThreadPool _delegateThreadPool = new(50);
 
         static void Main()
         {
