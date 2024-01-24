@@ -29,10 +29,12 @@
       Added collection parametrization.
       Added collection exception handling.
       Added collection pruning.
+      Added infinite wait and sleep ceiling burndown for balanced idle CPU time and performance.
+      Corrected default wait time.
     </PackageReleaseNotes>
-    <AssemblyVersion>1.2.6</AssemblyVersion>
-    <FileVersion>1.2.6</FileVersion>
-    <VersionPrefix>1.2.6</VersionPrefix>
+    <AssemblyVersion>1.2.8</AssemblyVersion>
+    <FileVersion>1.2.8</FileVersion>
+    <VersionPrefix>1.2.8</VersionPrefix>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>High performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
   </PropertyGroup>

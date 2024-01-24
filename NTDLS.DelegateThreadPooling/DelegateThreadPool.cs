@@ -241,15 +241,19 @@ namespace NTDLS.DelegateThreadPooling
             if (KeepRunning)
             {
                 KeepRunning = false;
-                _threads.ForEach(o => o.Join());
+                _threads.ForEach(o =>
+                {
+                    _itemQueuedWaitEvent.Set();
+                    o.Join();
+                });
                 _threads.Clear();
             }
         }
 
         private void InternalThreadProc()
         {
-            uint tryCount = 0;
-            bool pessimisticWaiting = false;
+            uint tryDequeueCount = 0;
+            uint tryDequeueCeiling = (uint)SpinCount;
 
             while (KeepRunning)
             {
@@ -267,10 +271,8 @@ namespace NTDLS.DelegateThreadPooling
                     return dequeued;
                 });
 
-                if (queueToken != null)
+                if (queueToken != null && KeepRunning)
                 {
-                    pessimisticWaiting = false;
-
                     try
                     {
                         if (queueToken.ThreadAction != null)
@@ -287,15 +289,39 @@ namespace NTDLS.DelegateThreadPooling
                         queueToken.SetException(ex);
                     }
                     queueToken.SetComplete();
+
+                    //We got an item from the queue. Reset the retry count and ceiling.
+                    tryDequeueCount = 0;
+                    tryDequeueCeiling = (uint)SpinCount;
                 }
 
-                if (pessimisticWaiting || tryCount++ == SpinCount)
+                if (KeepRunning)
                 {
-                    tryCount = 0;
-                    pessimisticWaiting = true;
-                    if (_itemQueuedWaitEvent.WaitOne(WaitDuration))
+                    if (tryDequeueCeiling <= 0)
                     {
-                        pessimisticWaiting = false;
+                        //Wait forever because we do not want to burn CPU time when the queue is totally idle.
+                        if (_itemQueuedWaitEvent.WaitOne())
+                        {
+                            //We got a "message queued" signal. Reset the retry count and ceiling.
+                            tryDequeueCount = 0;
+                            tryDequeueCeiling = (uint)SpinCount; //We got an item from the queue. Reset the retry ceiling.
+                        }
+                    }
+                    else if (tryDequeueCount++ > SpinCount)
+                    {
+                        tryDequeueCount = 0;
+                        //We get here when we have tried to dequeue too many times. We might as well sleep.
+
+                        if (_itemQueuedWaitEvent.WaitOne(WaitDuration))
+                        {
+                            //We got a "message queued" signal. Reset the retry count and ceiling.
+                            tryDequeueCount = 0;
+                            tryDequeueCeiling = (uint)SpinCount;
+                        }
+                        else
+                        {
+                            tryDequeueCeiling /= 2; //Burn down the retry ceiling so we retry less times this iteration.
+                        }
                     }
                 }
             }
