@@ -4,14 +4,12 @@ namespace TestHarness
 {
     internal class Program
     {
-        private static DelegateThreadPool _delegateThreadPool;
+        private static DelegateThreadPool _delegateThreadPool = new(20);
 
         static void Main()
         {
-            _delegateThreadPool = new(128);
-
-            //CollectionExample();
-            //NoCollectionExample();
+            CollectionExample();
+            NoCollectionExample();
 
             Console.WriteLine("Press [enter] to exit.");
             Console.ReadLine();

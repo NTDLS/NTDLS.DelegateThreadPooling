@@ -9,7 +9,6 @@
 
         internal DelegateThreadPool.ThreadAction? ThreadAction { get; private set; }
         internal DelegateThreadPool.ParameterizedThreadAction? ParameterizedThreadAction { get; private set; }
-
         internal DelegateThreadPool OwnerThreadPool { get; private set; }
 
         /// <summary>

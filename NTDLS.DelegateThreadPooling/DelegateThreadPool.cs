@@ -1,4 +1,7 @@
 ﻿using NTDLS.Semaphore;
+using System.ComponentModel;
+using System.Threading;
+using static NTDLS.DelegateThreadPooling.PooledThreadEnvelope;
 
 namespace NTDLS.DelegateThreadPooling
 {
@@ -18,6 +21,8 @@ namespace NTDLS.DelegateThreadPooling
         /// <param name="parameter">The user supplied parameter that will be passed to the delegate function.</param>
         public delegate void ParameterizedThreadAction(object? parameter);
 
+        private readonly List<PooledThreadEnvelope> _threadEnvelopes = new();
+
         /// <summary>
         /// The maximum number of items that can be in the queue at a time. Additional calls to enqueue will block.
         /// </summary>
@@ -31,16 +36,14 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// The number of times to repeatedly check the internal lock availability before going to going to sleep.
         /// </summary>
-        public int SpinCount { get; set; } = 10000;
+        public int SpinCount { get; set; } = 100;
 
         /// <summary>
         /// The number of milliseconds to wait for queued items after each expiration of SpinCount.
         /// </summary>
         public int WaitDuration { get; set; } = 1;
 
-        private readonly List<Thread> _threads = new();
         private readonly PessimisticCriticalResource<Queue<QueueItemState>> _actions = new();
-        private readonly AutoResetEvent _itemQueuedWaitEvent = new(true);
         private readonly AutoResetEvent _itemDequeuedWaitEvent = new(true);
         internal bool KeepRunning { get; private set; } = false;
 
@@ -54,9 +57,7 @@ namespace NTDLS.DelegateThreadPooling
 
             for (int i = 0; i < ThreadCount; i++)
             {
-                var thread = new Thread(InternalThreadProc);
-                _threads.Add(thread);
-                thread.Start();
+                _threadEnvelopes.Add(new PooledThreadEnvelope(InternalThreadProc));
             }
         }
 
@@ -78,9 +79,7 @@ namespace NTDLS.DelegateThreadPooling
 
             for (int i = 0; i < ThreadCount; i++)
             {
-                var thread = new Thread(InternalThreadProc);
-                _threads.Add(thread);
-                thread.Start();
+                _threadEnvelopes.Add(new PooledThreadEnvelope(InternalThreadProc));
             }
         }
 
@@ -96,31 +95,7 @@ namespace NTDLS.DelegateThreadPooling
 
             for (int i = 0; i < ThreadCount; i++)
             {
-                var thread = new Thread(InternalThreadProc);
-                _threads.Add(thread);
-                thread.Start();
-            }
-        }
-
-        /// <summary>
-        /// Adds additional threads to the thread pool.
-        /// </summary>
-        /// <param name="additionalThreads">The number of threads to add.</param>
-        /// <exception cref="Exception"></exception>
-        public void Grow(int additionalThreads)
-        {
-            if (KeepRunning == false)
-            {
-                throw new Exception("The thread pool is not running.");
-            }
-
-            ThreadCount += additionalThreads;
-
-            for (int i = 0; i < additionalThreads; i++)
-            {
-                var thread = new Thread(InternalThreadProc);
-                _threads.Add(thread);
-                thread.Start();
+                _threadEnvelopes.Add(new PooledThreadEnvelope(InternalThreadProc));
             }
         }
 
@@ -173,7 +148,7 @@ namespace NTDLS.DelegateThreadPooling
             {
                 var queueToken = new QueueItemState(this, threadAction);
                 o.Enqueue(queueToken);
-                _itemQueuedWaitEvent.Set();
+                SignalIdleThread();
                 return queueToken;
             });
         }
@@ -218,9 +193,16 @@ namespace NTDLS.DelegateThreadPooling
             {
                 var queueToken = new QueueItemState(this, parameter, parameterizedThreadAction);
                 o.Enqueue(queueToken);
-                _itemQueuedWaitEvent.Set();
+                SignalIdleThread();
                 return queueToken;
             });
+        }
+
+        private void SignalIdleThread()
+        {
+            //Find the first idle thread and signal it. Its ok if we dont find one, because the first
+            //  thread to complete its workload will automatically pickup the next item in the queue.
+            _threadEnvelopes.Where(o => o.State == PooledThreadState.Idle).FirstOrDefault()?.Signal();
         }
 
         /// <summary>
@@ -241,19 +223,25 @@ namespace NTDLS.DelegateThreadPooling
             if (KeepRunning)
             {
                 KeepRunning = false;
-                _threads.ForEach(o =>
+                _threadEnvelopes.ForEach(o =>
                 {
-                    _itemQueuedWaitEvent.Set();
+                    o.Signal();
                     o.Join();
                 });
-                _threads.Clear();
+                _threadEnvelopes.Clear();
             }
         }
 
-        private void InternalThreadProc()
+        private void InternalThreadProc(object? internalThreadObj)
         {
+            if (internalThreadObj == null)
+            {
+                throw new Exception("Thread manager was not supplied to thread proc.");
+            }
+
+            var threadEnvelope = (PooledThreadEnvelope)internalThreadObj;
+
             uint tryDequeueCount = 0;
-            uint tryDequeueCeiling = (uint)SpinCount;
 
             while (KeepRunning)
             {
@@ -271,7 +259,7 @@ namespace NTDLS.DelegateThreadPooling
                     return dequeued;
                 });
 
-                if (queueToken != null && KeepRunning)
+                if (KeepRunning && queueToken != null)
                 {
                     try
                     {
@@ -290,38 +278,17 @@ namespace NTDLS.DelegateThreadPooling
                     }
                     queueToken.SetComplete();
 
-                    //We got an item from the queue. Reset the retry count and ceiling.
-                    tryDequeueCount = 0;
-                    tryDequeueCeiling = (uint)SpinCount;
+                    tryDequeueCount = 0; //Rest the spin count if the thread dequeued an item.
                 }
-
-                if (KeepRunning)
+                else if (KeepRunning && tryDequeueCount++ >= SpinCount)
                 {
-                    if (tryDequeueCeiling <= 0)
-                    {
-                        //Wait forever because we do not want to burn CPU time when the queue is totally idle.
-                        if (_itemQueuedWaitEvent.WaitOne())
-                        {
-                            //We got a "message queued" signal. Reset the retry count and ceiling.
-                            tryDequeueCount = 0;
-                            tryDequeueCeiling = (uint)SpinCount; //We got an item from the queue. Reset the retry ceiling.
-                        }
-                    }
-                    else if (tryDequeueCount++ > SpinCount)
-                    {
-                        tryDequeueCount = 0;
-                        //We get here when we have tried to dequeue too many times. We might as well sleep.
+                    //We have tried to dequeue too many times without success, just sleep.
 
-                        if (_itemQueuedWaitEvent.WaitOne(WaitDuration))
-                        {
-                            //We got a "message queued" signal. Reset the retry count and ceiling.
-                            tryDequeueCount = 0;
-                            tryDequeueCeiling = (uint)SpinCount;
-                        }
-                        else
-                        {
-                            tryDequeueCeiling /= 2; //Burn down the retry ceiling so we retry less times this iteration.
-                        }
+                    threadEnvelope.State = PooledThreadState.Idle;
+                    if (threadEnvelope.Wait())
+                    {
+                        threadEnvelope.State = PooledThreadState.Executing;
+                        tryDequeueCount = 0; //Rest the spin count if the thread was signaled.
                     }
                 }
             }
