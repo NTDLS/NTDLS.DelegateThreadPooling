@@ -37,6 +37,38 @@ namespace NTDLS.DelegateThreadPooling
             return queueToken;
         }
 
+
+        /// <summary>
+        /// Adds a delegate function to the work queue.
+        /// </summary>
+        /// <param name="threadAction">Returns a token that allows for waiting on the queued item.</param>
+        /// /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
+        /// <returns></returns>
+        public QueueItemState Enqueue(ThreadAction threadAction, ThreadCompleteAction onComplete)
+        {
+            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccured == false);
+
+            var queueToken = _threadPool.Enqueue(threadAction, onComplete);
+            _collection.Add(queueToken);
+            return queueToken;
+        }
+
+        /// <summary>
+        /// Adds a delegate function to the work queue.
+        /// </summary>
+        /// <param name="parameter">User supplied parameter that will be passed to the delegate function.</param>
+        /// <param name="parameterizedThreadAction">The delegate function to execute when a thread is ready.</param>
+        /// /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
+        /// <returns></returns>
+        public QueueItemState Enqueue(object parameter, ParameterizedThreadAction parameterizedThreadAction, ThreadCompleteAction onComplete)
+        {
+            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccured == false);
+
+            var queueToken = _threadPool.Enqueue(parameter, parameterizedThreadAction, onComplete);
+            _collection.Add(queueToken);
+            return queueToken;
+        }
+
         /// <summary>
         /// Adds a delegate function to the work queue.
         /// </summary>
@@ -77,6 +109,33 @@ namespace NTDLS.DelegateThreadPooling
         {
             while (_threadPool.KeepRunning && _collection.All(o => o.WaitForCompletion()) == false)
             {
+                Thread.Yield();
+            }
+
+            if (_threadPool.KeepRunning == false)
+            {
+                throw new Exception("The thread pool is shutting down.");
+            }
+        }
+
+        /// <summary>
+        /// Blocks until all work items in the collection have been processed by a thread.
+        /// </summary>
+        /// <param name="millisecondsUntilUpdate">The number of milliseconds to wait between calls to the provided periodicUpdateAction().</param>
+        /// <param name="periodicUpdateAction">The delegate function to call every n-milliseconds</param>
+        /// <exception cref="Exception"></exception>
+        public void WaitForCompletion(int millisecondsUntilUpdate, PeriodicUpdateAction periodicUpdateAction)
+        {
+            var lastUpdate = DateTime.UtcNow;
+
+            while (_threadPool.KeepRunning && _collection.All(o => o.WaitForCompletion(millisecondsUntilUpdate, periodicUpdateAction)) == false)
+            {
+                if ((DateTime.UtcNow - lastUpdate).TotalMilliseconds > millisecondsUntilUpdate)
+                {
+                    periodicUpdateAction();
+                    lastUpdate = DateTime.UtcNow;
+                }
+
                 Thread.Yield();
             }
 

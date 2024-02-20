@@ -16,6 +16,16 @@ namespace NTDLS.DelegateThreadPooling
         public delegate void ThreadAction();
 
         /// <summary>
+        /// The delegate prototype for completed work queue items.
+        /// </summary>
+        public delegate void ThreadCompleteAction();
+
+        /// <summary>
+        /// The delegate prototype for periodic updates.
+        /// </summary>
+        public delegate void PeriodicUpdateAction();
+
+        /// <summary>
         /// The delegate prototype for the work queue.
         /// </summary>
         /// <param name="parameter">The user supplied parameter that will be passed to the delegate function.</param>
@@ -113,8 +123,9 @@ namespace NTDLS.DelegateThreadPooling
         /// Enqueues a work item into the thread pool.
         /// </summary>
         /// <param name="threadAction">The delegate function to execute when a thread is ready.</param>
+        /// /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
         /// <returns>Returns a token item that allows you to wait on completion or determine when the work item has been processed</returns>
-        public QueueItemState Enqueue(ThreadAction threadAction)
+        public QueueItemState Enqueue(ThreadAction threadAction, ThreadCompleteAction? onComplete = null)
         {
             //Enforce max queue depth size.
             if (MaxQueueDepth > 0)
@@ -146,7 +157,7 @@ namespace NTDLS.DelegateThreadPooling
 
             return _actions.Use(o =>
             {
-                var queueToken = new QueueItemState(this, threadAction);
+                var queueToken = new QueueItemState(this, threadAction, onComplete);
                 o.Enqueue(queueToken);
                 SignalIdleThread();
                 return queueToken;
@@ -158,8 +169,9 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         /// <param name="parameter">User supplied parameter that will be passed to the delegate function.</param>
         /// <param name="parameterizedThreadAction">The delegate function to execute when a thread is ready.</param>
+        /// /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
         /// <returns>Returns a token item that allows you to wait on completion or determine when the work item has been processed</returns>
-        public QueueItemState Enqueue(object? parameter, ParameterizedThreadAction parameterizedThreadAction)
+        public QueueItemState Enqueue(object? parameter, ParameterizedThreadAction parameterizedThreadAction, ThreadCompleteAction? onComplete = null)
         {
             //Enforce max queue depth size.
             if (MaxQueueDepth > 0)
@@ -191,7 +203,7 @@ namespace NTDLS.DelegateThreadPooling
 
             return _actions.Use(o =>
             {
-                var queueToken = new QueueItemState(this, parameter, parameterizedThreadAction);
+                var queueToken = new QueueItemState(this, parameter, parameterizedThreadAction, onComplete);
                 o.Enqueue(queueToken);
                 SignalIdleThread();
                 return queueToken;

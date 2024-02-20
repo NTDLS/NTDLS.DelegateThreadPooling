@@ -1,4 +1,6 @@
-﻿namespace NTDLS.DelegateThreadPooling
+﻿using static NTDLS.DelegateThreadPooling.DelegateThreadPool;
+
+namespace NTDLS.DelegateThreadPooling
 {
     /// <summary>
     /// Contains information to track the state of an enqueued worker item and allows for waiting on it to complete.
@@ -7,8 +9,9 @@
     {
         private readonly AutoResetEvent _queueWaitEvent = new(false);
 
-        internal DelegateThreadPool.ThreadAction? ThreadAction { get; private set; }
-        internal DelegateThreadPool.ParameterizedThreadAction? ParameterizedThreadAction { get; private set; }
+        internal ThreadCompleteAction? OnComplete { get; private set; }
+        internal ThreadAction? ThreadAction { get; private set; }
+        internal ParameterizedThreadAction? ParameterizedThreadAction { get; private set; }
         internal DelegateThreadPool OwnerThreadPool { get; private set; }
 
         /// <summary>
@@ -32,24 +35,30 @@
         public Exception? Exception { get; private set; }
 
 
-        internal QueueItemState(DelegateThreadPool ownerThreadPool, DelegateThreadPool.ThreadAction threadAction)
+        internal QueueItemState(DelegateThreadPool ownerThreadPool, ThreadAction threadAction, ThreadCompleteAction? onComplete = null)
         {
             Parameter = null;
             OwnerThreadPool = ownerThreadPool;
             ThreadAction = threadAction;
+            OnComplete = onComplete;
         }
 
-        internal QueueItemState(DelegateThreadPool ownerThreadPool, object? parameter, DelegateThreadPool.ParameterizedThreadAction parameterizedThreadAction)
+        internal QueueItemState(DelegateThreadPool ownerThreadPool, object? parameter, ParameterizedThreadAction parameterizedThreadAction, ThreadCompleteAction? onComplete = null)
         {
             Parameter = parameter;
             OwnerThreadPool = ownerThreadPool;
             ParameterizedThreadAction = parameterizedThreadAction;
+            OnComplete = onComplete;
         }
 
         internal void SetComplete()
         {
             IsComplete = true;
             _queueWaitEvent.Set();
+            if (OnComplete != null)
+            {
+                OnComplete();
+            }
         }
 
         internal void SetException(Exception ex)
@@ -85,6 +94,40 @@
                 {
                     tryCount = 0;
                     _queueWaitEvent.WaitOne(OwnerThreadPool.WaitDuration);
+                }
+            }
+
+            if (OwnerThreadPool.KeepRunning == false)
+            {
+                throw new Exception("The thread pool is shutting down.");
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Blocks until the work item has been processed by a thread in the pool.
+        /// </summary>
+        /// <param name="millisecondsUntilUpdate">The number of milliseconds to wait between calls to the provided periodicUpdateAction().</param>
+        /// <param name="periodicUpdateAction">The delegate function to call every n-milliseconds</param>
+        /// <returns></returns>
+        public bool WaitForCompletion(int millisecondsUntilUpdate, PeriodicUpdateAction periodicUpdateAction)
+        {
+            var lastUpdate = DateTime.UtcNow;
+
+            uint tryCount = 0;
+            while (OwnerThreadPool.KeepRunning && IsComplete == false)
+            {
+                if (tryCount++ == OwnerThreadPool.SpinCount)
+                {
+                    tryCount = 0;
+                    _queueWaitEvent.WaitOne(OwnerThreadPool.WaitDuration);
+
+                    if ((DateTime.UtcNow - lastUpdate).TotalMilliseconds > millisecondsUntilUpdate)
+                    {
+                        periodicUpdateAction();
+                        lastUpdate = DateTime.UtcNow;
+                    }
                 }
             }
 

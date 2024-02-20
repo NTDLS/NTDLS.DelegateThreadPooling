@@ -22,20 +22,12 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>serialization;disk;persistence</PackageTags>
     <PackageReleaseNotes>
-      Added default thread count, support for aborting queued items and changing spin and wait times.
-      Added exception handling and thread count growth.
-      Added maximum queue depth enforcement.
-      Added parameterized delegate support.
-      Added collection parametrization.
-      Added collection exception handling.
-      Added collection pruning.
-      Added infinite wait and sleep ceiling burndown for balanced idle CPU time and performance.
-      Corrected default wait time.
-      Further refined thread waiting and signaling.
+      Added completion callbacks.
+      Added periodic callbacks to WaitOnCompletion().
     </PackageReleaseNotes>
-    <AssemblyVersion>1.2.9</AssemblyVersion>
-    <FileVersion>1.2.9</FileVersion>
-    <VersionPrefix>1.2.9</VersionPrefix>
+    <AssemblyVersion>1.2.10</AssemblyVersion>
+    <FileVersion>1.2.10</FileVersion>
+    <VersionPrefix>1.2.10</VersionPrefix>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>High performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
   </PropertyGroup>
