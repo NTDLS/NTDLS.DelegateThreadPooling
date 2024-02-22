@@ -37,7 +37,6 @@ namespace NTDLS.DelegateThreadPooling
             return queueToken;
         }
 
-
         /// <summary>
         /// Adds a delegate function to the work queue.
         /// </summary>
@@ -88,28 +87,26 @@ namespace NTDLS.DelegateThreadPooling
         /// Returns true is any of the items have an exception.
         /// </summary>
         /// <returns></returns>
-        public bool ExceptionOccured()
-        {
-            return _collection.Any(o => o.ExceptionOccured);
-        }
+        public bool ExceptionOccured() => _collection.Any(o => o.ExceptionOccured);
 
         /// <summary>
         /// Cancels all queued worker items.
         /// </summary>
         /// <returns>Returns true if all item were cancelled.</returns>
-        public bool Abort()
-        {
-            return _collection.All(o => o.Abort());
-        }
+        public bool Abort() => _collection.All(o => o.Abort());
 
         /// <summary>
         /// Blocks until all work items in the collection have been processed by a thread.
         /// </summary>
         public void WaitForCompletion()
         {
-            while (_threadPool.KeepRunning && _collection.All(o => o.WaitForCompletion()) == false)
+            foreach (var item in _collection)
             {
-                Thread.Yield();
+                item.WaitForCompletion();
+                if (_threadPool.KeepRunning == false)
+                {
+                    break;
+                }
             }
 
             if (_threadPool.KeepRunning == false)
@@ -119,30 +116,72 @@ namespace NTDLS.DelegateThreadPooling
         }
 
         /// <summary>
-        /// Blocks until all work items in the collection have been processed by a thread.
+        /// Blocks until all work items in the collection have been processed by a thread or
+        /// the timeout expires. The timeout expiring does not cancel the queued work items.
         /// </summary>
-        /// <param name="millisecondsUntilUpdate">The number of milliseconds to wait between calls to the provided periodicUpdateAction().</param>
-        /// <param name="periodicUpdateAction">The delegate function to call every n-milliseconds</param>
-        /// <exception cref="Exception"></exception>
-        public void WaitForCompletion(int millisecondsUntilUpdate, PeriodicUpdateAction periodicUpdateAction)
+        /// <param name="maxMillisecondsToWait"></param>
+        /// <returns>Returns TRUE if all queued items completed, return FALSE on timeout.</returns>
+        /// <exception cref="Exception">Exceptions are thorwn if the associated thread pool is shutdown while waiting.</exception>
+        public bool WaitForCompletion(int maxMillisecondsToWait)
         {
-            var lastUpdate = DateTime.UtcNow;
+            var startTime = DateTime.UtcNow;
 
-            while (_threadPool.KeepRunning && _collection.All(o => o.WaitForCompletion(millisecondsUntilUpdate, periodicUpdateAction)) == false)
+            foreach (var item in _collection)
             {
-                if ((DateTime.UtcNow - lastUpdate).TotalMilliseconds > millisecondsUntilUpdate)
+                if (item.WaitForCompletion(maxMillisecondsToWait) == false)
                 {
-                    periodicUpdateAction();
-                    lastUpdate = DateTime.UtcNow;
+                    return false;
                 }
 
-                Thread.Yield();
+                if ((DateTime.UtcNow - startTime).TotalMilliseconds > maxMillisecondsToWait)
+                {
+                    return false;
+                }
+
+                if (_threadPool.KeepRunning == false)
+                {
+                    break;
+                }
             }
 
             if (_threadPool.KeepRunning == false)
             {
                 throw new Exception("The thread pool is shutting down.");
             }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Blocks until all work items in the collection have been processed by a thread. Periodiclly calls the callback so that the caller can report progress.
+        /// </summary>
+        /// <param name="millisecondsUntilUpdate">The number of milliseconds to wait between calls to the provided periodicUpdateAction().</param>
+        /// <param name="periodicUpdateAction">The delegate function to call every n-milliseconds</param>
+        /// <exception cref="Exception"></exception>
+        public bool WaitForCompletion(int millisecondsUntilUpdate, PeriodicUpdateAction periodicUpdateAction)
+        {
+            var lastUpdate = DateTime.UtcNow;
+
+            foreach (var item in _collection)
+            {
+                if (item.WaitForCompletion(millisecondsUntilUpdate, periodicUpdateAction) == false)
+                {
+                    return false;
+                }
+
+                if ((DateTime.UtcNow - lastUpdate).TotalMilliseconds > millisecondsUntilUpdate)
+                {
+                    periodicUpdateAction();
+                    lastUpdate = DateTime.UtcNow;
+                }
+            }
+
+            if (_threadPool.KeepRunning == false)
+            {
+                throw new Exception("The thread pool is shutting down.");
+            }
+
+            return true;
         }
     }
 }

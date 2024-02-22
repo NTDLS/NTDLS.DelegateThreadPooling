@@ -1,6 +1,4 @@
 ﻿using NTDLS.Semaphore;
-using System.ComponentModel;
-using System.Threading;
 using static NTDLS.DelegateThreadPooling.PooledThreadEnvelope;
 
 namespace NTDLS.DelegateThreadPooling
@@ -23,7 +21,8 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// The delegate prototype for periodic updates.
         /// </summary>
-        public delegate void PeriodicUpdateAction();
+        /// <returns>Return true to continue, return false to stop waiting. Canceling the wait does not cancel the queued workers.</returns>
+        public delegate bool PeriodicUpdateAction();
 
         /// <summary>
         /// The delegate prototype for the work queue.

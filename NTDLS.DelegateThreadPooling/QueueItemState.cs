@@ -84,8 +84,41 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// Blocks until the work item has been processed by a thread in the pool.
         /// </summary>
+        /// <param name="maxMillisecondsToWait">The maximum number of milliseconds to wait for the queue item work to complete.</param>
         /// <returns></returns>
-        public bool WaitForCompletion()
+        /// <exception cref="Exception"></exception>
+        public bool WaitForCompletion(int maxMillisecondsToWait)
+        {
+            var startTime = DateTime.UtcNow;
+
+            uint tryCount = 0;
+            while (OwnerThreadPool.KeepRunning && IsComplete == false)
+            {
+                if (tryCount++ == OwnerThreadPool.SpinCount)
+                {
+                    tryCount = 0;
+                    _queueWaitEvent.WaitOne(OwnerThreadPool.WaitDuration);
+
+                    if ((DateTime.UtcNow - startTime).TotalMilliseconds > maxMillisecondsToWait)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            if (OwnerThreadPool.KeepRunning == false)
+            {
+                throw new Exception("The thread pool is shutting down.");
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Blocks until the work item has been processed by a thread in the pool.
+        /// </summary>
+        /// <returns></returns>
+        public void WaitForCompletion()
         {
             uint tryCount = 0;
             while (OwnerThreadPool.KeepRunning && IsComplete == false)
@@ -101,8 +134,6 @@ namespace NTDLS.DelegateThreadPooling
             {
                 throw new Exception("The thread pool is shutting down.");
             }
-
-            return true;
         }
 
         /// <summary>
@@ -125,7 +156,10 @@ namespace NTDLS.DelegateThreadPooling
 
                     if ((DateTime.UtcNow - lastUpdate).TotalMilliseconds > millisecondsUntilUpdate)
                     {
-                        periodicUpdateAction();
+                        if (periodicUpdateAction() == false)
+                        {
+                            return false;
+                        }
                         lastUpdate = DateTime.UtcNow;
                     }
                 }
@@ -135,7 +169,6 @@ namespace NTDLS.DelegateThreadPooling
             {
                 throw new Exception("The thread pool is shutting down.");
             }
-
             return true;
         }
     }
