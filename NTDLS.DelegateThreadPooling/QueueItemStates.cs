@@ -18,6 +18,13 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         public int Count => _collection.Count;
 
+        /// <summary>
+        /// Gets the thread state item at the give index.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public QueueItemState Item(int index) => _collection[index];
+
         internal QueueItemStates(DelegateThreadPool threadPool)
         {
             _threadPool = threadPool;

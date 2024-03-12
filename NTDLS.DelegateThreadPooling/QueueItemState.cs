@@ -10,6 +10,11 @@ namespace NTDLS.DelegateThreadPooling
         private readonly AutoResetEvent _queueWaitEvent = new(false);
 
         /// <summary>
+        /// A name that can be assigned to the thread state object for tracking by the user.
+        /// </summary>
+        public string? Name { get; set; }
+
+        /// <summary>
         /// The UTC date/time that the thread started.
         /// </summary>
         public DateTime StartTimestamp { get; private set; }
