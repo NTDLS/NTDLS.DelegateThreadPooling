@@ -9,6 +9,16 @@ namespace NTDLS.DelegateThreadPooling
     {
         private readonly AutoResetEvent _queueWaitEvent = new(false);
 
+        /// <summary>
+        /// The UTC date/time that the thread started.
+        /// </summary>
+        public DateTime StartTimestamp { get; private set; }
+
+        /// <summary>
+        /// The duration of the threads delegate operation.
+        /// </summary>
+        public TimeSpan? CompletionTime { get; private set; }
+
         internal ThreadCompleteAction? OnComplete { get; private set; }
         internal ThreadAction? ThreadAction { get; private set; }
         internal ParameterizedThreadAction? ParameterizedThreadAction { get; private set; }
@@ -25,6 +35,11 @@ namespace NTDLS.DelegateThreadPooling
         public bool IsComplete { get; private set; }
 
         /// <summary>
+        /// Denotes if the queued work item was aborted before it was finished.
+        /// </summary>
+        public bool WasAborted { get; private set; }
+
+        /// <summary>
         /// Is set to true if an exception occured when executing the delegate command. Check Exception for details.
         /// </summary>
         public bool ExceptionOccured { get; private set; }
@@ -34,9 +49,9 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         public Exception? Exception { get; private set; }
 
-
         internal QueueItemState(DelegateThreadPool ownerThreadPool, ThreadAction threadAction, ThreadCompleteAction? onComplete = null)
         {
+            StartTimestamp = DateTime.UtcNow;
             Parameter = null;
             OwnerThreadPool = ownerThreadPool;
             ThreadAction = threadAction;
@@ -45,6 +60,7 @@ namespace NTDLS.DelegateThreadPooling
 
         internal QueueItemState(DelegateThreadPool ownerThreadPool, object? parameter, ParameterizedThreadAction parameterizedThreadAction, ThreadCompleteAction? onComplete = null)
         {
+            StartTimestamp = DateTime.UtcNow;
             Parameter = parameter;
             OwnerThreadPool = ownerThreadPool;
             ParameterizedThreadAction = parameterizedThreadAction;
@@ -53,6 +69,8 @@ namespace NTDLS.DelegateThreadPooling
 
         internal void SetComplete()
         {
+            CompletionTime = DateTime.UtcNow - StartTimestamp;
+
             IsComplete = true;
             _queueWaitEvent.Set();
             if (OnComplete != null)
@@ -63,6 +81,7 @@ namespace NTDLS.DelegateThreadPooling
 
         internal void SetException(Exception ex)
         {
+            CompletionTime = DateTime.UtcNow - StartTimestamp;
             Exception = ex;
             ExceptionOccured = true;
         }
@@ -75,6 +94,7 @@ namespace NTDLS.DelegateThreadPooling
         {
             if (IsComplete == false)
             {
+                WasAborted = true;
                 SetComplete();
                 return true;
             }
@@ -108,7 +128,7 @@ namespace NTDLS.DelegateThreadPooling
 
             if (OwnerThreadPool.KeepRunning == false)
             {
-                throw new Exception("The thread pool is shutting down.");
+                throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
             }
 
             return true;
@@ -132,7 +152,7 @@ namespace NTDLS.DelegateThreadPooling
 
             if (OwnerThreadPool.KeepRunning == false)
             {
-                throw new Exception("The thread pool is shutting down.");
+                throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
             }
         }
 
@@ -167,7 +187,7 @@ namespace NTDLS.DelegateThreadPooling
 
             if (OwnerThreadPool.KeepRunning == false)
             {
-                throw new Exception("The thread pool is shutting down.");
+                throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
             }
             return true;
         }

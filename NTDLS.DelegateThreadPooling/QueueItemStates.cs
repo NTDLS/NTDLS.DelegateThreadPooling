@@ -3,9 +3,9 @@
 namespace NTDLS.DelegateThreadPooling
 {
     /// <summary>
-    /// Contains a collection of queue tokens. Allows for determining when a set of queued items have been completed.
+    /// Contains a collection of queue item states. Allows for determining when a set of queued items have been completed.
     /// </summary>
-    public class QueueItemStateCollection
+    public class QueueItemStates
     {
         /// <summary>
         /// The collection of enqueued work items and their states.
@@ -18,7 +18,7 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         public int Count => _collection.Count;
 
-        internal QueueItemStateCollection(DelegateThreadPool threadPool)
+        internal QueueItemStates(DelegateThreadPool threadPool)
         {
             _threadPool = threadPool;
         }
@@ -111,7 +111,7 @@ namespace NTDLS.DelegateThreadPooling
 
             if (_threadPool.KeepRunning == false)
             {
-                throw new Exception("The thread pool is shutting down.");
+                throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
             }
         }
 
@@ -146,7 +146,7 @@ namespace NTDLS.DelegateThreadPooling
 
             if (_threadPool.KeepRunning == false)
             {
-                throw new Exception("The thread pool is shutting down.");
+                throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
             }
 
             return true;
@@ -178,7 +178,7 @@ namespace NTDLS.DelegateThreadPooling
 
             if (_threadPool.KeepRunning == false)
             {
-                throw new Exception("The thread pool is shutting down.");
+                throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
             }
 
             return true;

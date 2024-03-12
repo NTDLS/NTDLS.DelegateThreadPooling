@@ -113,9 +113,9 @@ namespace NTDLS.DelegateThreadPooling
         /// of items that have been queued so that you can wait on them to complete.
         /// </summary>
         /// <returns></returns>
-        public QueueItemStateCollection CreateQueueStateCollection()
+        public QueueItemStates CreateQueueStateTracker()
         {
-            return new QueueItemStateCollection(this);
+            return new QueueItemStates(this);
         }
 
         /// <summary>
@@ -150,7 +150,7 @@ namespace NTDLS.DelegateThreadPooling
 
                 if (KeepRunning == false)
                 {
-                    throw new Exception("The thread pool is shutting down.");
+                    throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
                 }
             }
 
@@ -196,7 +196,7 @@ namespace NTDLS.DelegateThreadPooling
 
                 if (KeepRunning == false)
                 {
-                    throw new Exception("The thread pool is shutting down.");
+                    throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
                 }
             }
 

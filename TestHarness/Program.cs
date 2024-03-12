@@ -21,7 +21,7 @@ namespace TestHarness
         {
             Console.WriteLine("CollectionExample: Starting to enqueue items...");
 
-            var queuedStates = _delegateThreadPool.CreateQueueStateCollection();
+            var queuedStates = _delegateThreadPool.CreateQueueStateTracker();
 
             //Enqueue work items as delegate functions.
             for (int i = 0; i < 100; i++)

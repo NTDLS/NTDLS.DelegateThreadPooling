@@ -22,11 +22,13 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>serialization;disk;persistence</PackageTags>
     <PackageReleaseNotes>
-      Added WaitForCompletion timeout.
+      Added thread worker state timestamps and duration.
+      Added aborted thread state tracking.
+      Better defined the shut down exceptions.
     </PackageReleaseNotes>
-    <AssemblyVersion>1.2.11</AssemblyVersion>
-    <FileVersion>1.2.11</FileVersion>
-    <VersionPrefix>1.2.11</VersionPrefix>
+    <AssemblyVersion>1.2.12</AssemblyVersion>
+    <FileVersion>1.2.12</FileVersion>
+    <VersionPrefix>1.2.12</VersionPrefix>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>High performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
   </PropertyGroup>
