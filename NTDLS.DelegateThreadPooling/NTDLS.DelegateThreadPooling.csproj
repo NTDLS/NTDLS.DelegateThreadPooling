@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <IncludeSymbols>True</IncludeSymbols>
@@ -26,12 +25,12 @@
       Added aborted thread state tracking.
       Better defined the shut down exceptions.
       Added thread state collection name tracking.
+      License fix.
+      Child nuget updates.
     </PackageReleaseNotes>
-    <AssemblyVersion>1.2.13</AssemblyVersion>
-    <FileVersion>1.2.13</FileVersion>
-    <VersionPrefix>1.2.13</VersionPrefix>
+    <Version>1.2.15</Version>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
-    <Description>High performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
+    <Description>Very high-performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -50,7 +49,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NTDLS.Semaphore" Version="3.3.0" />
+    <PackageReference Include="NTDLS.Semaphore" Version="3.3.1" />
   </ItemGroup>
 
 </Project>

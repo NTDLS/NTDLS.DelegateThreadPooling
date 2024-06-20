@@ -45,12 +45,12 @@ namespace NTDLS.DelegateThreadPooling
         public bool WasAborted { get; private set; }
 
         /// <summary>
-        /// Is set to true if an exception occured when executing the delegate command. Check Exception for details.
+        /// Is set to true if an exception occurred when executing the delegate command. Check Exception for details.
         /// </summary>
-        public bool ExceptionOccured { get; private set; }
+        public bool ExceptionOccurred { get; private set; }
 
         /// <summary>
-        /// Is set if an exception occured when executing the delegate command, otherwise null.
+        /// Is set if an exception occurred when executing the delegate command, otherwise null.
         /// </summary>
         public Exception? Exception { get; private set; }
 
@@ -78,17 +78,14 @@ namespace NTDLS.DelegateThreadPooling
 
             IsComplete = true;
             _queueWaitEvent.Set();
-            if (OnComplete != null)
-            {
-                OnComplete();
-            }
+            OnComplete?.Invoke();
         }
 
         internal void SetException(Exception ex)
         {
             CompletionTime = DateTime.UtcNow - StartTimestamp;
             Exception = ex;
-            ExceptionOccured = true;
+            ExceptionOccurred = true;
         }
 
         /// <summary>

@@ -3,7 +3,7 @@
     /// <summary>
     /// Thrown when the thread pool is being shutdown.
     /// </summary>
-    public class DelegateThreadPoolShuttingDown: Exception
+    public class DelegateThreadPoolShuttingDown : Exception
     {
         /// <summary>
         /// Instanciates a new exception.
@@ -17,7 +17,7 @@
         /// </summary>
         /// <param name="message"></param>
         public DelegateThreadPoolShuttingDown(string message)
-            :base (message)
+            : base(message)
         {
         }
     }

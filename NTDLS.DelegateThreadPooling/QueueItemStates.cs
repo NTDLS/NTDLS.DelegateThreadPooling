@@ -37,7 +37,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState Enqueue(ThreadAction threadAction)
         {
-            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccured == false);
+            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccurred == false);
 
             var queueToken = _threadPool.Enqueue(threadAction);
             _collection.Add(queueToken);
@@ -52,7 +52,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState Enqueue(ThreadAction threadAction, ThreadCompleteAction onComplete)
         {
-            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccured == false);
+            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccurred == false);
 
             var queueToken = _threadPool.Enqueue(threadAction, onComplete);
             _collection.Add(queueToken);
@@ -68,7 +68,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState Enqueue(object parameter, ParameterizedThreadAction parameterizedThreadAction, ThreadCompleteAction onComplete)
         {
-            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccured == false);
+            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccurred == false);
 
             var queueToken = _threadPool.Enqueue(parameter, parameterizedThreadAction, onComplete);
             _collection.Add(queueToken);
@@ -83,7 +83,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState Enqueue(object parameter, ParameterizedThreadAction parameterizedThreadAction)
         {
-            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccured == false);
+            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccurred == false);
 
             var queueToken = _threadPool.Enqueue(parameter, parameterizedThreadAction);
             _collection.Add(queueToken);
@@ -94,7 +94,7 @@ namespace NTDLS.DelegateThreadPooling
         /// Returns true is any of the items have an exception.
         /// </summary>
         /// <returns></returns>
-        public bool ExceptionOccured() => _collection.Any(o => o.ExceptionOccured);
+        public bool ExceptionOccurred() => _collection.Any(o => o.ExceptionOccurred);
 
         /// <summary>
         /// Cancels all queued worker items.
