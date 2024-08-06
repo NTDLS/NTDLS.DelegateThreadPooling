@@ -5,7 +5,8 @@ namespace NTDLS.DelegateThreadPooling
     /// <summary>
     /// Contains information to track the state of an enqueued worker item and allows for waiting on it to complete.
     /// </summary>
-    public class QueueItemState
+    /// <typeparam name="T">The type which will be passed for parameterized thread delegates.</typeparam>
+    public class QueueItemState<T> : IQueueItemState
     {
         private readonly AutoResetEvent _queueWaitEvent = new(false);
 
@@ -24,10 +25,28 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         public TimeSpan? CompletionTime { get; private set; }
 
-        internal ThreadCompleteAction? OnComplete { get; private set; }
-        internal ThreadAction? ThreadAction { get; private set; }
-        internal ParameterizedThreadAction? ParameterizedThreadAction { get; private set; }
-        internal DelegateThreadPool OwnerThreadPool { get; private set; }
+        /// <summary>
+        /// Delegate which is called once the thread completes.
+        /// </summary>
+        public ThreadCompleteAction? OnComplete { get; private set; }
+
+        /// <summary>
+        /// Non-parameterized thread worker delegate.
+        /// </summary>
+        public ThreadAction? ThreadAction { get; private set; }
+
+        /// <summary>
+        /// Parameterized thread worker delegate.
+        /// </summary>
+        public ParameterizedThreadAction<T>? ParameterizedThreadAction { get; private set; }
+
+        ParameterizedThreadAction<object>? IQueueItemState.ParameterizedThreadAction
+            => ParameterizedThreadAction != null ? new ParameterizedThreadAction<object>(o => ParameterizedThreadAction((T?)o)) : null;
+
+        /// <summary>
+        /// Thread pool which owns the item state.
+        /// </summary>
+        public DelegateThreadPool OwnerThreadPool { get; private set; }
 
         /// <summary>
         /// The user-settable parameter that will be passed to the delegate function.
@@ -63,7 +82,7 @@ namespace NTDLS.DelegateThreadPooling
             OnComplete = onComplete;
         }
 
-        internal QueueItemState(DelegateThreadPool ownerThreadPool, object? parameter, ParameterizedThreadAction parameterizedThreadAction, ThreadCompleteAction? onComplete = null)
+        internal QueueItemState(DelegateThreadPool ownerThreadPool, object? parameter, ParameterizedThreadAction<T> parameterizedThreadAction, ThreadCompleteAction? onComplete = null)
         {
             StartTimestamp = DateTime.UtcNow;
             Parameter = parameter;
@@ -72,7 +91,10 @@ namespace NTDLS.DelegateThreadPooling
             OnComplete = onComplete;
         }
 
-        internal void SetComplete()
+        /// <summary>
+        /// Sets the thread state as complete.
+        /// </summary>
+        public void SetComplete()
         {
             CompletionTime = DateTime.UtcNow - StartTimestamp;
 
@@ -81,7 +103,10 @@ namespace NTDLS.DelegateThreadPooling
             OnComplete?.Invoke();
         }
 
-        internal void SetException(Exception ex)
+        /// <summary>
+        /// Sets the thread exception state as complete.
+        /// </summary>
+        public void SetException(Exception ex)
         {
             CompletionTime = DateTime.UtcNow - StartTimestamp;
             Exception = ex;

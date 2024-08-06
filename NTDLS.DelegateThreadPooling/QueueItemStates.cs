@@ -5,12 +5,13 @@ namespace NTDLS.DelegateThreadPooling
     /// <summary>
     /// Contains a collection of queue item states. Allows for determining when a set of queued items have been completed.
     /// </summary>
-    public class QueueItemStates
+    /// <typeparam name="T">The type which will be passed for parameterized thread delegates.</typeparam>
+    public class QueueItemStates<T>
     {
         /// <summary>
         /// The collection of enqueued work items and their states.
         /// </summary>
-        private readonly List<QueueItemState> _collection = new();
+        private readonly List<QueueItemState<T>> _collection = new();
         private readonly DelegateThreadPool _threadPool;
 
         /// <summary>
@@ -23,7 +24,7 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         /// <param name="index"></param>
         /// <returns></returns>
-        public QueueItemState Item(int index) => _collection[index];
+        public QueueItemState<T> Item(int index) => _collection[index];
 
         internal QueueItemStates(DelegateThreadPool threadPool)
         {
@@ -35,11 +36,11 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         /// <param name="threadAction">Returns a token that allows for waiting on the queued item.</param>
         /// <returns></returns>
-        public QueueItemState Enqueue(ThreadAction threadAction)
+        public QueueItemState<T> Enqueue(ThreadAction threadAction)
         {
             _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccurred == false);
 
-            var queueToken = _threadPool.Enqueue(threadAction);
+            var queueToken = _threadPool.Enqueue<T>(threadAction);
             _collection.Add(queueToken);
             return queueToken;
         }
@@ -48,13 +49,13 @@ namespace NTDLS.DelegateThreadPooling
         /// Adds a delegate function to the work queue.
         /// </summary>
         /// <param name="threadAction">Returns a token that allows for waiting on the queued item.</param>
-        /// /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
+        /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
         /// <returns></returns>
-        public QueueItemState Enqueue(ThreadAction threadAction, ThreadCompleteAction onComplete)
+        public QueueItemState<T> Enqueue(ThreadAction threadAction, ThreadCompleteAction onComplete)
         {
             _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccurred == false);
 
-            var queueToken = _threadPool.Enqueue(threadAction, onComplete);
+            var queueToken = _threadPool.Enqueue<T>(threadAction, onComplete);
             _collection.Add(queueToken);
             return queueToken;
         }
@@ -64,9 +65,9 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         /// <param name="parameter">User supplied parameter that will be passed to the delegate function.</param>
         /// <param name="parameterizedThreadAction">The delegate function to execute when a thread is ready.</param>
-        /// /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
+        /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
         /// <returns></returns>
-        public QueueItemState Enqueue(object parameter, ParameterizedThreadAction parameterizedThreadAction, ThreadCompleteAction onComplete)
+        public QueueItemState<T> Enqueue(T parameter, ParameterizedThreadAction<T> parameterizedThreadAction, ThreadCompleteAction onComplete)
         {
             _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccurred == false);
 
@@ -81,7 +82,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <param name="parameter">User supplied parameter that will be passed to the delegate function.</param>
         /// <param name="parameterizedThreadAction">The delegate function to execute when a thread is ready.</param>
         /// <returns></returns>
-        public QueueItemState Enqueue(object parameter, ParameterizedThreadAction parameterizedThreadAction)
+        public QueueItemState<T> Enqueue(T parameter, ParameterizedThreadAction<T> parameterizedThreadAction)
         {
             _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccurred == false);
 
