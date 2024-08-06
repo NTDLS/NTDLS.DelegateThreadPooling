@@ -22,7 +22,7 @@ namespace TestHarness
         {
         }
 
-        private static void TypedDelegateThread(TypedDelegateParam? param)
+        private static void TypedDelegateThread(TypedDelegateParam param)
         {
             Thread.Sleep(100);
         }

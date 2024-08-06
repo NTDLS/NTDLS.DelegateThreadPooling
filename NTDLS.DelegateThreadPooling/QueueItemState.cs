@@ -41,7 +41,7 @@ namespace NTDLS.DelegateThreadPooling
         public ParameterizedThreadAction<T>? ParameterizedThreadAction { get; private set; }
 
         ParameterizedThreadAction<object>? IQueueItemState.ParameterizedThreadAction
-            => ParameterizedThreadAction != null ? new ParameterizedThreadAction<object>(o => ParameterizedThreadAction((T?)o)) : null;
+            => ParameterizedThreadAction != null ? new ParameterizedThreadAction<object>(o => ParameterizedThreadAction((T)o)) : null;
 
         /// <summary>
         /// Thread pool which owns the item state.

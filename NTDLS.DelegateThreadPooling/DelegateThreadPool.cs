@@ -38,7 +38,7 @@ namespace NTDLS.DelegateThreadPooling
         /// The delegate prototype for the work queue.
         /// </summary>
         /// <param name="parameter">The user supplied parameter that will be passed to the delegate function.</param>
-        public delegate void ParameterizedThreadAction<T>(T? parameter);
+        public delegate void ParameterizedThreadAction<T>(T parameter);
 
         private readonly List<PooledThreadEnvelope> _threadEnvelopes = new();
 
