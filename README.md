@@ -1,6 +1,6 @@
 # NTDLS.DelegateThreadPooling
 
-📦 Be sure to check out the NuGet pacakge: https://www.nuget.org/packages/NTDLS.DelegateThreadPooling
+📦 Be sure to check out the NuGet package: https://www.nuget.org/packages/NTDLS.DelegateThreadPooling
 
 High performance active thread pool where work items can be queued as delegate functions.
 Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections
@@ -50,7 +50,7 @@ private static void NoCollectionExample()
 {
     Console.WriteLine("NoCollectionExample: Starting to enqueue items...");
 
-    var queueTokens = new List<QueueItemState>();
+    var queueTokens = new List<QueueItemState<object>>();
 
     //Enqueue work items as delegate functions.
     for (int i = 0; i < 100; i++)
