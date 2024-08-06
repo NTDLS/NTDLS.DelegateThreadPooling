@@ -9,8 +9,8 @@ namespace TestHarness
         static void Main()
         {
             TypedDelegateExample();
-            //CollectionExample();
-            //NoCollectionExample();
+            CollectionExample();
+            NoCollectionExample();
 
             Console.WriteLine("Press [enter] to exit.");
             Console.ReadLine();
@@ -24,14 +24,14 @@ namespace TestHarness
 
         private static void TypedDelegateThread(TypedDelegateParam? param)
         {
+            Thread.Sleep(100);
         }
-
 
         private static void TypedDelegateExample()
         {
             Console.WriteLine("TypedDelegateExample: Starting to enqueue items...");
 
-            var queuedStates = _delegateThreadPool.CreateQueueStateTracker< TypedDelegateParam>();
+            var queuedStates = _delegateThreadPool.CreateQueueStateTracker<TypedDelegateParam>();
 
             //Enqueue work items as delegate functions.
             for (int i = 0; i < 100; i++)
@@ -49,7 +49,7 @@ namespace TestHarness
             Console.WriteLine("All workers are complete.");
         }
 
-        /*
+
         private static void CollectionExample()
         {
             Console.WriteLine("CollectionExample: Starting to enqueue items...");
@@ -61,7 +61,7 @@ namespace TestHarness
             {
                 queuedStates.Enqueue(() =>
                 {
-                    Thread.Sleep(1000); //Do some work...
+                    Thread.Sleep(100); //Do some work...
                 });
             }
 
@@ -77,14 +77,14 @@ namespace TestHarness
         {
             Console.WriteLine("NoCollectionExample: Starting to enqueue items...");
 
-            var queueTokens = new List<QueueItemState>();
+            var queueTokens = new List<QueueItemState<object>>();
 
             //Enqueue work items as delegate functions.
             for (int i = 0; i < 100; i++)
             {
                 var queueItemState = _delegateThreadPool.Enqueue(() =>
                 {
-                    Thread.Sleep(1000); //Do some work...
+                    Thread.Sleep(100); //Do some work...
                 });
 
                 queueTokens.Add(queueItemState);
@@ -97,6 +97,6 @@ namespace TestHarness
 
             Console.WriteLine("All workers are complete.");
         }
-        */
+
     }
 }

@@ -10,6 +10,9 @@ namespace NTDLS.DelegateThreadPooling
         ThreadCompleteAction? OnComplete { get; }
         ThreadAction? ThreadAction { get; }
         //ParameterizedThreadAction<T>? ParameterizedThreadAction { get; }
+
+        ParameterizedThreadAction<object>? ParameterizedThreadAction { get; }
+
         DelegateThreadPool OwnerThreadPool { get; }
 
         void SetComplete();

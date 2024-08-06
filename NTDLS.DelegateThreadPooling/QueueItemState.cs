@@ -5,7 +5,7 @@ namespace NTDLS.DelegateThreadPooling
     /// <summary>
     /// Contains information to track the state of an enqueued worker item and allows for waiting on it to complete.
     /// </summary>
-    public class QueueItemState<T>: IQueueItemState
+    public class QueueItemState<T> : IQueueItemState
     {
         private readonly AutoResetEvent _queueWaitEvent = new(false);
 
@@ -38,6 +38,8 @@ namespace NTDLS.DelegateThreadPooling
         /// Parameterized thread worker delegate.
         /// </summary>
         public ParameterizedThreadAction<T>? ParameterizedThreadAction { get; private set; }
+        ParameterizedThreadAction<object>? IQueueItemState.ParameterizedThreadAction
+            => ParameterizedThreadAction != null ? new ParameterizedThreadAction<object>(o => ParameterizedThreadAction((T?)o)) : null;
 
         /// <summary>
         /// Thread pool which owns the item state.

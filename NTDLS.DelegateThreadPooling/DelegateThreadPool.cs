@@ -1,4 +1,6 @@
 ﻿using NTDLS.Semaphore;
+using System.Collections.Concurrent;
+using System.Reflection;
 using static NTDLS.DelegateThreadPooling.PooledThreadEnvelope;
 
 namespace NTDLS.DelegateThreadPooling
@@ -8,6 +10,8 @@ namespace NTDLS.DelegateThreadPooling
     /// </summary>
     public class DelegateThreadPool : IDisposable
     {
+        private static readonly ConcurrentDictionary<Type, MethodInfo> _reflectionCache = new();
+
         /// <summary>
         /// The delegate prototype for the work queue.
         /// </summary>
@@ -385,9 +389,19 @@ namespace NTDLS.DelegateThreadPooling
                         {
                             queueToken.ThreadAction();
                         }
-                        //else if (queueToken.ParameterizedThreadAction != null)
+                        else if (queueToken.ParameterizedThreadAction != null)
                         {
-                            //queueToken.ParameterizedThreadAction(queueToken.Parameter);
+                            var actionType = queueToken.ParameterizedThreadAction.GetType();
+                            if (!_reflectionCache.TryGetValue(actionType, out var method))
+                            {
+                                method = actionType.GetMethod("Invoke");
+                                if (method != null)
+                                {
+                                    _reflectionCache[actionType] = method;
+                                }
+                            }
+
+                            method?.Invoke(queueToken.ParameterizedThreadAction, new[] { queueToken.Parameter });
                         }
                     }
                     catch (Exception ex)
