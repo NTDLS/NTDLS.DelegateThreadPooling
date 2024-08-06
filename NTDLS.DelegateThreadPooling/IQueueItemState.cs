@@ -6,7 +6,7 @@ namespace NTDLS.DelegateThreadPooling
     {
         object? Parameter { get; }
 
-        bool IsComplete { get;  }
+        bool IsComplete { get; }
         ThreadCompleteAction? OnComplete { get; }
         ThreadAction? ThreadAction { get; }
         //ParameterizedThreadAction<T>? ParameterizedThreadAction { get; }

@@ -5,6 +5,7 @@ namespace NTDLS.DelegateThreadPooling
     /// <summary>
     /// Contains information to track the state of an enqueued worker item and allows for waiting on it to complete.
     /// </summary>
+    /// <typeparam name="T">The type which will be passed for parameterized thread delegates.</typeparam>
     public class QueueItemState<T> : IQueueItemState
     {
         private readonly AutoResetEvent _queueWaitEvent = new(false);
@@ -38,6 +39,7 @@ namespace NTDLS.DelegateThreadPooling
         /// Parameterized thread worker delegate.
         /// </summary>
         public ParameterizedThreadAction<T>? ParameterizedThreadAction { get; private set; }
+
         ParameterizedThreadAction<object>? IQueueItemState.ParameterizedThreadAction
             => ParameterizedThreadAction != null ? new ParameterizedThreadAction<object>(o => ParameterizedThreadAction((T?)o)) : null;
 

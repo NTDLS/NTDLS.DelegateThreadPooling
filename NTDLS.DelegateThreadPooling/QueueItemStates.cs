@@ -5,6 +5,7 @@ namespace NTDLS.DelegateThreadPooling
     /// <summary>
     /// Contains a collection of queue item states. Allows for determining when a set of queued items have been completed.
     /// </summary>
+    /// <typeparam name="T">The type which will be passed for parameterized thread delegates.</typeparam>
     public class QueueItemStates<T>
     {
         /// <summary>
@@ -48,7 +49,7 @@ namespace NTDLS.DelegateThreadPooling
         /// Adds a delegate function to the work queue.
         /// </summary>
         /// <param name="threadAction">Returns a token that allows for waiting on the queued item.</param>
-        /// /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
+        /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
         /// <returns></returns>
         public QueueItemState<T> Enqueue(ThreadAction threadAction, ThreadCompleteAction onComplete)
         {
@@ -64,7 +65,7 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         /// <param name="parameter">User supplied parameter that will be passed to the delegate function.</param>
         /// <param name="parameterizedThreadAction">The delegate function to execute when a thread is ready.</param>
-        /// /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
+        /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
         /// <returns></returns>
         public QueueItemState<T> Enqueue(T parameter, ParameterizedThreadAction<T> parameterizedThreadAction, ThreadCompleteAction onComplete)
         {
