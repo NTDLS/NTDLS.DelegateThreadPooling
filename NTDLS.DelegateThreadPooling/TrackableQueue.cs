@@ -6,7 +6,7 @@ namespace NTDLS.DelegateThreadPooling
     /// Contains a collection of queue item states. Allows for determining when a set of queued items have been completed.
     /// </summary>
     /// <typeparam name="T">The type which will be passed for parameterized thread delegates.</typeparam>
-    public class QueueItemStates<T>
+    public class TrackableQueue<T>
     {
         /// <summary>
         /// The collection of enqueued work items and their states.
@@ -26,7 +26,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState<T> Item(int index) => _collection[index];
 
-        internal QueueItemStates(DelegateThreadPool threadPool)
+        internal TrackableQueue(DelegateThreadPool threadPool)
         {
             _threadPool = threadPool;
         }
