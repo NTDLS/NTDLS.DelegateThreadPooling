@@ -8,8 +8,9 @@ namespace TestHarness
 
         static void Main()
         {
-            CollectionExample();
-            NoCollectionExample();
+            TypedDelegateExample();
+            //CollectionExample();
+            //NoCollectionExample();
 
             Console.WriteLine("Press [enter] to exit.");
             Console.ReadLine();
@@ -17,6 +18,38 @@ namespace TestHarness
             _delegateThreadPool.Dispose();
         }
 
+        class TypedDelegateParam
+        {
+        }
+
+        private static void TypedDelegateThread(TypedDelegateParam? param)
+        {
+        }
+
+
+        private static void TypedDelegateExample()
+        {
+            Console.WriteLine("TypedDelegateExample: Starting to enqueue items...");
+
+            var queuedStates = _delegateThreadPool.CreateQueueStateTracker< TypedDelegateParam>();
+
+            //Enqueue work items as delegate functions.
+            for (int i = 0; i < 100; i++)
+            {
+                var param = new TypedDelegateParam();
+
+                queuedStates.Enqueue(param, TypedDelegateThread);
+            }
+
+            Console.WriteLine("Enqueue complete, waiting on completion.");
+
+            //Wait on all of the work items to complete.
+            queuedStates.WaitForCompletion();
+
+            Console.WriteLine("All workers are complete.");
+        }
+
+        /*
         private static void CollectionExample()
         {
             Console.WriteLine("CollectionExample: Starting to enqueue items...");
@@ -64,5 +97,6 @@ namespace TestHarness
 
             Console.WriteLine("All workers are complete.");
         }
+        */
     }
 }
