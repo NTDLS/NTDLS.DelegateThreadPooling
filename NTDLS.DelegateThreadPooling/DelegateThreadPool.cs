@@ -119,9 +119,9 @@ namespace NTDLS.DelegateThreadPooling
         /// of items that have been queued so that you can wait on them to complete.
         /// </summary>
         /// <returns></returns>
-        public QueueItemStates CreateQueueStateTracker()
+        public QueueItemStates<object> CreateQueueStateTracker()
         {
-            return new QueueItemStates(this);
+            return new QueueItemStates<object>(this);
         }
 
         /// <summary>
@@ -140,7 +140,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <param name="threadAction">The delegate function to execute when a thread is ready.</param>
         /// /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
         /// <returns>Returns a token item that allows you to wait on completion or determine when the work item has been processed</returns>
-        public QueueItemState Enqueue(ThreadAction threadAction, ThreadCompleteAction? onComplete = null)
+        public QueueItemState<object> Enqueue(ThreadAction threadAction, ThreadCompleteAction? onComplete = null)
         {
             //Enforce max queue depth size.
             if (MaxQueueDepth > 0)
@@ -172,7 +172,7 @@ namespace NTDLS.DelegateThreadPooling
 
             return _actions.Use(o =>
             {
-                var queueToken = new QueueItemState(this, threadAction, onComplete);
+                var queueToken = new QueueItemState<object>(this, threadAction, onComplete);
                 o.Enqueue(queueToken);
                 SignalIdleThread();
                 return queueToken;
@@ -231,7 +231,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <param name="parameterizedThreadAction">The delegate function to execute when a thread is ready.</param>
         /// /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
         /// <returns>Returns a token item that allows you to wait on completion or determine when the work item has been processed</returns>
-        public QueueItemState Enqueue(object? parameter, ParameterizedThreadAction parameterizedThreadAction, ThreadCompleteAction? onComplete = null)
+        public QueueItemState<object> Enqueue(object? parameter, ParameterizedThreadAction<object> parameterizedThreadAction, ThreadCompleteAction? onComplete = null)
         {
             //Enforce max queue depth size.
             if (MaxQueueDepth > 0)
@@ -263,7 +263,7 @@ namespace NTDLS.DelegateThreadPooling
 
             return _actions.Use(o =>
             {
-                var queueToken = new QueueItemState(this, parameter, parameterizedThreadAction, onComplete);
+                var queueToken = new QueueItemState<object>(this, parameter, parameterizedThreadAction, onComplete);
                 o.Enqueue(queueToken);
                 SignalIdleThread();
                 return queueToken;
@@ -316,7 +316,6 @@ namespace NTDLS.DelegateThreadPooling
             });
         }
 
-
         private void SignalIdleThread()
         {
             //Find the first idle thread and signal it. Its ok if we don't find one, because the first
@@ -329,7 +328,7 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         /// <param name="item"></param>
         /// <returns>Returns true if the item was cancelled.</returns>
-        public bool Abort(QueueItemState item)
+        public bool Abort<T>(QueueItemState<T> item)
         {
             return item.Abort();
         }
