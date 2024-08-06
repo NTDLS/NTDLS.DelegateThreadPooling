@@ -34,7 +34,7 @@ namespace TestHarness
 
             Console.WriteLine("Enqueue complete, waiting on completion.");
 
-            //Wait on all of the workitems to complete.
+            //Wait on all of the work items to complete.
             queuedStates.WaitForCompletion();
 
             Console.WriteLine("All workers are complete.");
@@ -59,7 +59,7 @@ namespace TestHarness
 
             Console.WriteLine("Enqueue complete, waiting on completion.");
 
-            //Wait on all of the workitems to complete.
+            //Wait on all of the work items to complete.
             queueTokens.ForEach(t => t.WaitForCompletion());
 
             Console.WriteLine("All workers are complete.");

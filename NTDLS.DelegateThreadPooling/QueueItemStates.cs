@@ -128,7 +128,7 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         /// <param name="maxMillisecondsToWait"></param>
         /// <returns>Returns TRUE if all queued items completed, return FALSE on timeout.</returns>
-        /// <exception cref="Exception">Exceptions are thorwn if the associated thread pool is shutdown while waiting.</exception>
+        /// <exception cref="Exception">Exceptions are thrown if the associated thread pool is shutdown while waiting.</exception>
         public bool WaitForCompletion(int maxMillisecondsToWait)
         {
             var startTime = DateTime.UtcNow;
@@ -160,7 +160,8 @@ namespace NTDLS.DelegateThreadPooling
         }
 
         /// <summary>
-        /// Blocks until all work items in the collection have been processed by a thread. Periodiclly calls the callback so that the caller can report progress.
+        /// Blocks until all work items in the collection have been processed by a thread.
+        /// Periodically calls the callback so that the caller can report progress.
         /// </summary>
         /// <param name="millisecondsUntilUpdate">The number of milliseconds to wait between calls to the provided periodicUpdateAction().</param>
         /// <param name="periodicUpdateAction">The delegate function to call every n-milliseconds</param>

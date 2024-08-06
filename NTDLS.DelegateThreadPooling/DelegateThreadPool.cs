@@ -143,7 +143,7 @@ namespace NTDLS.DelegateThreadPooling
                     {
                         tryCount = 0;
                         //Wait for a small amount of time or until the event is signaled (which 
-                        //indicates that an item has been dequeued thefrby creating free space).
+                        //indicates that an item has been dequeued thereby creating free space).
                         _itemDequeuedWaitEvent.WaitOne(WaitDuration);
                     }
                 }
@@ -189,7 +189,7 @@ namespace NTDLS.DelegateThreadPooling
                     {
                         tryCount = 0;
                         //Wait for a small amount of time or until the event is signaled (which 
-                        //indicates that an item has been dequeued thefrby creating free space).
+                        //indicates that an item has been dequeued thereby creating free space).
                         _itemDequeuedWaitEvent.WaitOne(WaitDuration);
                     }
                 }
@@ -211,7 +211,7 @@ namespace NTDLS.DelegateThreadPooling
 
         private void SignalIdleThread()
         {
-            //Find the first idle thread and signal it. Its ok if we dont find one, because the first
+            //Find the first idle thread and signal it. Its ok if we don't find one, because the first
             //  thread to complete its workload will automatically pickup the next item in the queue.
             _threadEnvelopes.Where(o => o.State == PooledThreadState.Idle).FirstOrDefault()?.Signal();
         }
