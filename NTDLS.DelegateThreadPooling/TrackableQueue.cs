@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using static NTDLS.DelegateThreadPooling.DelegateThreadPool;
 
 namespace NTDLS.DelegateThreadPooling
@@ -136,7 +137,8 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// Blocks until all work items in the collection have been processed by a thread.
         /// </summary>
-        public void WaitForCompletion()
+        /// <param name="suppressExceptions">When false, any exceptions will be thrown the the completion of the queue wait</param> 
+        public void WaitForCompletion(bool suppressExceptions = false)
         {
             foreach (var item in _collection)
             {
@@ -144,6 +146,22 @@ namespace NTDLS.DelegateThreadPooling
                 if (_threadPool.KeepRunning == false)
                 {
                     break;
+                }
+            }
+
+            if (!suppressExceptions)
+            {
+                var exceptions = new List<Exception>();
+                foreach (var item in _collection.Where(o => o.ExceptionOccurred))
+                {
+                    if (item.Exception != null)
+                    {
+                        exceptions.Add(item.Exception);
+                    }
+                }
+                if (exceptions.Any())
+                {
+                    throw new AggregateException(exceptions);
                 }
             }
 
@@ -158,9 +176,10 @@ namespace NTDLS.DelegateThreadPooling
         /// the timeout expires. The timeout expiring does not cancel the queued work items.
         /// </summary>
         /// <param name="maxMillisecondsToWait"></param>
+        /// <param name="suppressExceptions">When false, any exceptions will be thrown the the completion of the queue wait</param> 
         /// <returns>Returns TRUE if all queued items completed, return FALSE on timeout.</returns>
         /// <exception cref="Exception">Exceptions are thrown if the associated thread pool is shutdown while waiting.</exception>
-        public bool WaitForCompletion(int maxMillisecondsToWait)
+        public bool WaitForCompletion(int maxMillisecondsToWait, bool suppressExceptions = false)
         {
             var startTime = DateTime.UtcNow;
 
@@ -182,6 +201,22 @@ namespace NTDLS.DelegateThreadPooling
                 }
             }
 
+            if (!suppressExceptions)
+            {
+                var exceptions = new List<Exception>();
+                foreach (var item in _collection.Where(o => o.ExceptionOccurred))
+                {
+                    if (item.Exception != null)
+                    {
+                        exceptions.Add(item.Exception);
+                    }
+                }
+                if (exceptions.Any())
+                {
+                    throw new AggregateException(exceptions);
+                }
+            }
+
             if (_threadPool.KeepRunning == false)
             {
                 throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
@@ -196,8 +231,9 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         /// <param name="millisecondsUntilUpdate">The number of milliseconds to wait between calls to the provided periodicUpdateAction().</param>
         /// <param name="periodicUpdateAction">The delegate function to call every n-milliseconds</param>
+        /// <param name="suppressExceptions">When false, any exceptions will be thrown the the completion of the queue wait</param>
         /// <exception cref="Exception"></exception>
-        public bool WaitForCompletion(int millisecondsUntilUpdate, PeriodicUpdateAction periodicUpdateAction)
+        public bool WaitForCompletion(int millisecondsUntilUpdate, PeriodicUpdateAction periodicUpdateAction, bool suppressExceptions = false)
         {
             var lastUpdate = DateTime.UtcNow;
 
@@ -212,6 +248,22 @@ namespace NTDLS.DelegateThreadPooling
                 {
                     periodicUpdateAction();
                     lastUpdate = DateTime.UtcNow;
+                }
+            }
+
+            if (!suppressExceptions)
+            {
+                var exceptions = new List<Exception>();
+                foreach (var item in _collection.Where(o => o.ExceptionOccurred))
+                {
+                    if (item.Exception != null)
+                    {
+                        exceptions.Add(item.Exception);
+                    }
+                }
+                if (exceptions.Any())
+                {
+                    throw new AggregateException(exceptions);
                 }
             }
 
