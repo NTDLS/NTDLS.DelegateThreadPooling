@@ -137,7 +137,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// Blocks until all work items in the collection have been processed by a thread.
         /// </summary>
-        /// <param name="suppressExceptions">When false, any exceptions will be thrown the the completion of the queue wait</param> 
+        /// <param name="suppressExceptions">When false, any exceptions will be thrown at the completion of the queue wait</param> 
         public void WaitForCompletion(bool suppressExceptions = false)
         {
             foreach (var item in _collection)
@@ -165,7 +165,7 @@ namespace NTDLS.DelegateThreadPooling
         /// the timeout expires. The timeout expiring does not cancel the queued work items.
         /// </summary>
         /// <param name="maxMillisecondsToWait"></param>
-        /// <param name="suppressExceptions">When false, any exceptions will be thrown the the completion of the queue wait</param> 
+        /// <param name="suppressExceptions">When false, any exceptions will be thrown at the completion of the queue wait</param> 
         /// <returns>Returns TRUE if all queued items completed, return FALSE on timeout.</returns>
         /// <exception cref="Exception">Exceptions are thrown if the associated thread pool is shutdown while waiting.</exception>
         public bool WaitForCompletion(int maxMillisecondsToWait, bool suppressExceptions = false)
@@ -229,7 +229,7 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         /// <param name="millisecondsUntilUpdate">The number of milliseconds to wait between calls to the provided periodicUpdateAction().</param>
         /// <param name="periodicUpdateAction">The delegate function to call every n-milliseconds</param>
-        /// <param name="suppressExceptions">When false, any exceptions will be thrown the the completion of the queue wait</param>
+        /// <param name="suppressExceptions">When false, any exceptions will be thrown at the completion of the queue wait</param> 
         /// <exception cref="Exception"></exception>
         public bool WaitForCompletion(int millisecondsUntilUpdate, PeriodicUpdateAction periodicUpdateAction, bool suppressExceptions = false)
         {
