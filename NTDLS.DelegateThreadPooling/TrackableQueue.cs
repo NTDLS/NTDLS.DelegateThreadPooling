@@ -1,4 +1,5 @@
-﻿using static NTDLS.DelegateThreadPooling.DelegateThreadPool;
+﻿using System.Collections;
+using static NTDLS.DelegateThreadPooling.DelegateThreadPool;
 
 namespace NTDLS.DelegateThreadPooling
 {
@@ -6,7 +7,7 @@ namespace NTDLS.DelegateThreadPooling
     /// Contains a collection of queue item states. Allows for determining when a set of queued items have been completed.
     /// </summary>
     /// <typeparam name="T">The type which will be passed for parameterized thread delegates.</typeparam>
-    public class TrackableQueue<T>
+    public class TrackableQueue<T> : IEnumerable<QueueItemState<T>>
     {
         /// <summary>
         /// The collection of enqueued work items and their states.
@@ -14,17 +15,37 @@ namespace NTDLS.DelegateThreadPooling
         private readonly List<QueueItemState<T>> _collection = new();
         private readonly DelegateThreadPool _threadPool;
 
+        #region IEnumerable.
+
+        /// <summary>
+        /// Exposes the enumerator of the QueueItemState collection for iteration.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerator<QueueItemState<T>> GetEnumerator()
+        {
+            return _collection.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return _collection.GetEnumerator();
+        }
+
+        #endregion
+
         /// <summary>
         /// The number of items in the state collection.
         /// </summary>
-        public int Count => _collection.Count;
+        public int Count
+            => _collection.Count;
 
         /// <summary>
         /// Gets the thread state item at the give index.
         /// </summary>
         /// <param name="index"></param>
         /// <returns></returns>
-        public QueueItemState<T> Item(int index) => _collection[index];
+        public QueueItemState<T> Item(int index)
+            => _collection[index];
 
         internal TrackableQueue(DelegateThreadPool threadPool)
         {
@@ -95,13 +116,22 @@ namespace NTDLS.DelegateThreadPooling
         /// Returns true is any of the items have an exception.
         /// </summary>
         /// <returns></returns>
-        public bool ExceptionOccurred() => _collection.Any(o => o.ExceptionOccurred);
+        public bool ExceptionOccurred()
+            => _collection.Any(o => o.ExceptionOccurred);
+
+        /// <summary>
+        /// Returns a list of all items where an unhandled exception occurred.
+        /// </summary>
+        /// <returns></returns>
+        public List<QueueItemState<T>> Exceptions()
+            => _collection.Where(o => o.ExceptionOccurred).ToList();
 
         /// <summary>
         /// Cancels all queued worker items.
         /// </summary>
         /// <returns>Returns true if all item were cancelled.</returns>
-        public bool Abort() => _collection.All(o => o.Abort());
+        public bool Abort()
+            => _collection.All(o => o.Abort());
 
         /// <summary>
         /// Blocks until all work items in the collection have been processed by a thread.
