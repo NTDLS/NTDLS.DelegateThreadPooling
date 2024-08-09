@@ -151,18 +151,7 @@ namespace NTDLS.DelegateThreadPooling
 
             if (!suppressExceptions)
             {
-                var exceptions = new List<Exception>();
-                foreach (var item in _collection.Where(o => o.ExceptionOccurred))
-                {
-                    if (item.Exception != null)
-                    {
-                        exceptions.Add(item.Exception);
-                    }
-                }
-                if (exceptions.Any())
-                {
-                    throw new AggregateException(exceptions);
-                }
+                ThrowAnyExceptions();
             }
 
             if (_threadPool.KeepRunning == false)
@@ -203,18 +192,7 @@ namespace NTDLS.DelegateThreadPooling
 
             if (!suppressExceptions)
             {
-                var exceptions = new List<Exception>();
-                foreach (var item in _collection.Where(o => o.ExceptionOccurred))
-                {
-                    if (item.Exception != null)
-                    {
-                        exceptions.Add(item.Exception);
-                    }
-                }
-                if (exceptions.Any())
-                {
-                    throw new AggregateException(exceptions);
-                }
+                ThrowAnyExceptions();
             }
 
             if (_threadPool.KeepRunning == false)
@@ -223,6 +201,26 @@ namespace NTDLS.DelegateThreadPooling
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Throws an aggregate exception for any and all exceptions which occurred in the queue.
+        /// </summary>
+        /// <exception cref="AggregateException"></exception>
+        public void ThrowAnyExceptions()
+        {
+            var exceptions = new List<Exception>();
+            foreach (var item in _collection.Where(o => o.ExceptionOccurred))
+            {
+                if (item.Exception != null)
+                {
+                    exceptions.Add(item.Exception);
+                }
+            }
+            if (exceptions.Any())
+            {
+                throw new AggregateException(exceptions);
+            }
         }
 
         /// <summary>
@@ -253,18 +251,7 @@ namespace NTDLS.DelegateThreadPooling
 
             if (!suppressExceptions)
             {
-                var exceptions = new List<Exception>();
-                foreach (var item in _collection.Where(o => o.ExceptionOccurred))
-                {
-                    if (item.Exception != null)
-                    {
-                        exceptions.Add(item.Exception);
-                    }
-                }
-                if (exceptions.Any())
-                {
-                    throw new AggregateException(exceptions);
-                }
+                ThrowAnyExceptions();
             }
 
             if (_threadPool.KeepRunning == false)
