@@ -321,7 +321,6 @@ namespace NTDLS.DelegateThreadPooling
         /// Executes the enqueued delegates, both parameterized and non-parameterized.
         /// </summary>
         /// <param name="internalThreadObj"></param>
-        /// <exception cref="Exception"></exception>
         private void InternalThreadProc(object? internalThreadObj)
         {
             if (internalThreadObj == null)

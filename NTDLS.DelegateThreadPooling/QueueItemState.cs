@@ -186,10 +186,10 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// Blocks until the work item has been processed by a thread in the pool.
         /// </summary>
-        /// <param name="millisecondsUntilUpdate">The number of milliseconds to wait between calls to the provided periodicUpdateAction().</param>
+        /// <param name="updateDelay">The amount of time to wait between calls to the provided periodicUpdateAction().</param>
         /// <param name="periodicUpdateAction">The delegate function to call every n-milliseconds</param>
         /// <returns></returns>
-        public bool WaitForCompletion(int millisecondsUntilUpdate, PeriodicUpdateAction periodicUpdateAction)
+        public bool WaitForCompletion(TimeSpan updateDelay, PeriodicUpdateAction periodicUpdateAction)
         {
             var lastUpdate = DateTime.UtcNow;
 
@@ -201,7 +201,7 @@ namespace NTDLS.DelegateThreadPooling
                     tryCount = 0;
                     _queueWaitEvent.WaitOne(OwnerThreadPool.WaitDuration);
 
-                    if ((DateTime.UtcNow - lastUpdate).TotalMilliseconds > millisecondsUntilUpdate)
+                    if ((DateTime.UtcNow - lastUpdate).TotalMilliseconds > updateDelay.Milliseconds)
                     {
                         if (periodicUpdateAction() == false)
                         {

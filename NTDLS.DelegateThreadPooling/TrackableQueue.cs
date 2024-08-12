@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 using static NTDLS.DelegateThreadPooling.DelegateThreadPool;
 
 namespace NTDLS.DelegateThreadPooling
@@ -67,7 +65,9 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState<T> Enqueue(ThreadAction threadAction)
         {
-            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccurred == false);
+            ThrowAnyExceptions();
+
+            _collection.RemoveAll(o => o.IsComplete == true);
 
             var queueToken = _threadPool.Enqueue<T>(threadAction);
             _collection.Add(queueToken);
@@ -82,7 +82,9 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState<T> Enqueue(ThreadAction threadAction, ThreadCompleteAction onComplete)
         {
-            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccurred == false);
+            ThrowAnyExceptions();
+
+            _collection.RemoveAll(o => o.IsComplete == true);
 
             var queueToken = _threadPool.Enqueue<T>(threadAction, onComplete);
             _collection.Add(queueToken);
@@ -98,7 +100,9 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState<T> Enqueue(T parameter, ParameterizedThreadAction<T> parameterizedThreadAction, ThreadCompleteAction onComplete)
         {
-            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccurred == false);
+            ThrowAnyExceptions();
+
+            _collection.RemoveAll(o => o.IsComplete == true);
 
             var queueToken = _threadPool.Enqueue(parameter, parameterizedThreadAction, onComplete);
             _collection.Add(queueToken);
@@ -114,7 +118,9 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState<T> Enqueue(T parameter, ParameterizedThreadAction<T> parameterizedThreadAction)
         {
-            _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccurred == false);
+            ThrowAnyExceptions();
+
+            _collection.RemoveAll(o => o.IsComplete == true);
 
             //Enforce max queue depth size.
             if (MaxChildQueueDepth > 0)
@@ -132,6 +138,12 @@ namespace NTDLS.DelegateThreadPooling
                     if (tryCount++ == _threadPool.SpinCount)
                     {
                         tryCount = 0;
+
+                        if (tryCount == 0)
+                        {
+                            ThrowAnyExceptions();
+                        }
+
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
                         _threadPool.ItemDequeuedWaitEvent.WaitOne(_threadPool.WaitDuration);
@@ -173,8 +185,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// Blocks until all work items in the collection have been processed by a thread.
         /// </summary>
-        /// <param name="suppressExceptions">When false, any exceptions will be thrown at the completion of the queue wait</param> 
-        public void WaitForCompletion(bool suppressExceptions = false)
+        public void WaitForCompletion()
         {
             foreach (var item in _collection)
             {
@@ -185,10 +196,7 @@ namespace NTDLS.DelegateThreadPooling
                 }
             }
 
-            if (!suppressExceptions)
-            {
-                ThrowAnyExceptions();
-            }
+            ThrowAnyExceptions();
 
             if (_threadPool.KeepRunning == false)
             {
@@ -201,10 +209,9 @@ namespace NTDLS.DelegateThreadPooling
         /// the timeout expires. The timeout expiring does not cancel the queued work items.
         /// </summary>
         /// <param name="maxMillisecondsToWait"></param>
-        /// <param name="suppressExceptions">When false, any exceptions will be thrown at the completion of the queue wait</param> 
         /// <returns>Returns TRUE if all queued items completed, return FALSE on timeout.</returns>
         /// <exception cref="Exception">Exceptions are thrown if the associated thread pool is shutdown while waiting.</exception>
-        public bool WaitForCompletion(int maxMillisecondsToWait, bool suppressExceptions = false)
+        public bool WaitForCompletion(int maxMillisecondsToWait)
         {
             var startTime = DateTime.UtcNow;
 
@@ -226,10 +233,7 @@ namespace NTDLS.DelegateThreadPooling
                 }
             }
 
-            if (!suppressExceptions)
-            {
-                ThrowAnyExceptions();
-            }
+            ThrowAnyExceptions();
 
             if (_threadPool.KeepRunning == false)
             {
@@ -263,32 +267,28 @@ namespace NTDLS.DelegateThreadPooling
         /// Blocks until all work items in the collection have been processed by a thread.
         /// Periodically calls the callback so that the caller can report progress.
         /// </summary>
-        /// <param name="millisecondsUntilUpdate">The number of milliseconds to wait between calls to the provided periodicUpdateAction().</param>
+        /// <param name="updateDelay">The amount of time to wait between calls to the provided periodicUpdateAction().</param>
         /// <param name="periodicUpdateAction">The delegate function to call every n-milliseconds</param>
-        /// <param name="suppressExceptions">When false, any exceptions will be thrown at the completion of the queue wait</param> 
         /// <exception cref="Exception"></exception>
-        public bool WaitForCompletion(int millisecondsUntilUpdate, PeriodicUpdateAction periodicUpdateAction, bool suppressExceptions = false)
+        public bool WaitForCompletion(TimeSpan updateDelay, PeriodicUpdateAction periodicUpdateAction)
         {
             var lastUpdate = DateTime.UtcNow;
 
             foreach (var item in _collection)
             {
-                if (item.WaitForCompletion(millisecondsUntilUpdate, periodicUpdateAction) == false)
+                if (item.WaitForCompletion(updateDelay, periodicUpdateAction) == false)
                 {
                     return false;
                 }
 
-                if ((DateTime.UtcNow - lastUpdate).TotalMilliseconds > millisecondsUntilUpdate)
+                if ((DateTime.UtcNow - lastUpdate).TotalMilliseconds > updateDelay.TotalMilliseconds)
                 {
                     periodicUpdateAction();
                     lastUpdate = DateTime.UtcNow;
                 }
             }
 
-            if (!suppressExceptions)
-            {
-                ThrowAnyExceptions();
-            }
+            ThrowAnyExceptions();
 
             if (_threadPool.KeepRunning == false)
             {
