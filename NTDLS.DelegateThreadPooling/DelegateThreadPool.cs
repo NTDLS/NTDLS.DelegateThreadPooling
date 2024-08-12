@@ -63,7 +63,7 @@ namespace NTDLS.DelegateThreadPooling
         public int WaitDuration { get; set; } = 1;
 
         private readonly PessimisticCriticalResource<Queue<IQueueItemState>> _actions = new();
-        private readonly AutoResetEvent _itemDequeuedWaitEvent = new(true);
+        internal AutoResetEvent ItemDequeuedWaitEvent { get; private set; } = new(true);
         internal bool KeepRunning { get; private set; } = false;
 
         /// <summary>
@@ -132,9 +132,9 @@ namespace NTDLS.DelegateThreadPooling
         /// of items that have been queued so that you can wait on them to complete.
         /// </summary>
         /// <typeparam name="T">The type which will be passed to the parameterized thread delegate.</typeparam>
-        public TrackableQueue<T> CreateChildQueue<T>()
+        public TrackableQueue<T> CreateChildQueue<T>(int maxSubQueueDepth = 0)
         {
-            return new TrackableQueue<T>(this);
+            return new TrackableQueue<T>(this, maxSubQueueDepth);
         }
 
         #region Enqueue Non-Parameterized.
@@ -165,7 +165,7 @@ namespace NTDLS.DelegateThreadPooling
                         tryCount = 0;
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
-                        _itemDequeuedWaitEvent.WaitOne(WaitDuration);
+                        ItemDequeuedWaitEvent.WaitOne(WaitDuration);
                     }
                 }
 
@@ -238,7 +238,7 @@ namespace NTDLS.DelegateThreadPooling
                         tryCount = 0;
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
-                        _itemDequeuedWaitEvent.WaitOne(WaitDuration);
+                        ItemDequeuedWaitEvent.WaitOne(WaitDuration);
                     }
                 }
 
@@ -340,7 +340,7 @@ namespace NTDLS.DelegateThreadPooling
                     if (o.TryDequeue(out var dequeued))
                     {
                         //Enqueue might be blocking due to enforcing max queue depth size, tell it that the queue size has decreased.
-                        _itemDequeuedWaitEvent.Set();
+                        ItemDequeuedWaitEvent.Set();
                     }
                     if (dequeued?.IsComplete == true)
                     {

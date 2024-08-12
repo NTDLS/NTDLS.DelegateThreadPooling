@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using static NTDLS.DelegateThreadPooling.DelegateThreadPool;
 
@@ -15,6 +16,11 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         private readonly List<QueueItemState<T>> _collection = new();
         private readonly DelegateThreadPool _threadPool;
+
+        /// <summary>
+        /// The maximum number of items that can be in the trackable queue at a time. Additional calls to enqueue will block.
+        /// </summary>
+        public int MaxSubQueueDepth { get; set; }
 
         #region IEnumerable.
 
@@ -48,8 +54,9 @@ namespace NTDLS.DelegateThreadPooling
         public QueueItemState<T> Item(int index)
             => _collection[index];
 
-        internal TrackableQueue(DelegateThreadPool threadPool)
+        internal TrackableQueue(DelegateThreadPool threadPool, int maxSubQueueDepth = 0)
         {
+            MaxSubQueueDepth = maxSubQueueDepth;
             _threadPool = threadPool;
         }
 
@@ -98,6 +105,7 @@ namespace NTDLS.DelegateThreadPooling
             return queueToken;
         }
 
+
         /// <summary>
         /// Adds a delegate function to the work queue.
         /// </summary>
@@ -107,6 +115,33 @@ namespace NTDLS.DelegateThreadPooling
         public QueueItemState<T> Enqueue(T parameter, ParameterizedThreadAction<T> parameterizedThreadAction)
         {
             _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccurred == false);
+
+            //Enforce max queue depth size.
+            if (MaxSubQueueDepth > 0)
+            {
+                uint tryCount = 0;
+
+                while (_threadPool.KeepRunning)
+                {
+                    if (_collection.Count < MaxSubQueueDepth)
+                    {
+                        break;
+                    }
+
+                    if (tryCount++ == _threadPool.SpinCount)
+                    {
+                        tryCount = 0;
+                        //Wait for a small amount of time or until the event is signaled (which 
+                        //indicates that an item has been dequeued thereby creating free space).
+                        _threadPool.ItemDequeuedWaitEvent.WaitOne(_threadPool.WaitDuration);
+                    }
+                }
+
+                if (_threadPool.KeepRunning == false)
+                {
+                    throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
+                }
+            }
 
             var queueToken = _threadPool.Enqueue(parameter, parameterizedThreadAction);
             _collection.Add(queueToken);
