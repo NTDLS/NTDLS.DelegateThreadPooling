@@ -20,7 +20,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// The maximum number of items that can be in the trackable queue at a time. Additional calls to enqueue will block.
         /// </summary>
-        public int MaxSubQueueDepth { get; set; }
+        public int MaxChildQueueDepth { get; set; }
 
         #region IEnumerable.
 
@@ -54,9 +54,9 @@ namespace NTDLS.DelegateThreadPooling
         public QueueItemState<T> Item(int index)
             => _collection[index];
 
-        internal TrackableQueue(DelegateThreadPool threadPool, int maxSubQueueDepth = 0)
+        internal TrackableQueue(DelegateThreadPool threadPool, int maxChildQueueDepth = 0)
         {
-            MaxSubQueueDepth = maxSubQueueDepth;
+            MaxChildQueueDepth = maxChildQueueDepth;
             _threadPool = threadPool;
         }
 
@@ -117,13 +117,14 @@ namespace NTDLS.DelegateThreadPooling
             _collection.RemoveAll(o => o.IsComplete == true && o.ExceptionOccurred == false);
 
             //Enforce max queue depth size.
-            if (MaxSubQueueDepth > 0)
+            if (MaxChildQueueDepth > 0)
             {
                 uint tryCount = 0;
 
                 while (_threadPool.KeepRunning)
                 {
-                    if (_collection.Count < MaxSubQueueDepth)
+                    int childQueueLength = _collection.Count;
+                    if (childQueueLength < MaxChildQueueDepth && childQueueLength < _threadPool.MaxQueueDepth)
                     {
                         break;
                     }

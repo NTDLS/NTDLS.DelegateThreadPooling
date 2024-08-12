@@ -132,9 +132,9 @@ namespace NTDLS.DelegateThreadPooling
         /// of items that have been queued so that you can wait on them to complete.
         /// </summary>
         /// <typeparam name="T">The type which will be passed to the parameterized thread delegate.</typeparam>
-        public TrackableQueue<T> CreateChildQueue<T>(int maxSubQueueDepth = 0)
+        public TrackableQueue<T> CreateChildQueue<T>(int maxChildQueueDepth = 0)
         {
-            return new TrackableQueue<T>(this, maxSubQueueDepth);
+            return new TrackableQueue<T>(this, maxChildQueueDepth);
         }
 
         #region Enqueue Non-Parameterized.
