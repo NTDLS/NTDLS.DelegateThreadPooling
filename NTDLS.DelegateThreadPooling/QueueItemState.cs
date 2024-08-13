@@ -28,20 +28,27 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// Delegate which is called once the thread completes.
         /// </summary>
-        public ThreadCompleteAction? OnComplete { get; private set; }
+        public ThreadCompleteActionDelegate<T>? ThreadCompleteAction { get; private set; }
 
         /// <summary>
         /// Non-parameterized thread worker delegate.
         /// </summary>
-        public ThreadAction? ThreadAction { get; private set; }
+        public ThreadActionDelegate? ThreadAction { get; private set; }
 
         /// <summary>
         /// Parameterized thread worker delegate.
         /// </summary>
-        public ParameterizedThreadAction<T>? ParameterizedThreadAction { get; private set; }
+        public ParameterizedThreadActionDelegate<T>? ParameterizedThreadAction { get; private set; }
 
-        ParameterizedThreadAction<object>? IQueueItemState.ParameterizedThreadAction
-            => ParameterizedThreadAction != null ? new ParameterizedThreadAction<object>(o => ParameterizedThreadAction((T)o)) : null;
+        #region IQueueItemState.
+
+        ParameterizedThreadActionDelegate<object>? IQueueItemState.ParameterizedThreadAction
+            => ParameterizedThreadAction != null ? new ParameterizedThreadActionDelegate<object>(o => ParameterizedThreadAction((T)o)) : null;
+
+        ThreadCompleteActionDelegate<object>? IQueueItemState.ThreadCompleteAction
+            => ThreadCompleteAction != null ? new ThreadCompleteActionDelegate<object>(o => ThreadCompleteAction(this)) : null;
+
+        #endregion
 
         /// <summary>
         /// Thread pool which owns the item state.
@@ -73,22 +80,22 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         public Exception? Exception { get; private set; }
 
-        internal QueueItemState(DelegateThreadPool ownerThreadPool, ThreadAction threadAction, ThreadCompleteAction? onComplete = null)
+        internal QueueItemState(DelegateThreadPool ownerThreadPool, ThreadActionDelegate threadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
             StartTimestamp = DateTime.UtcNow;
             Parameter = null;
             OwnerThreadPool = ownerThreadPool;
             ThreadAction = threadAction;
-            OnComplete = onComplete;
+            ThreadCompleteAction = onComplete;
         }
 
-        internal QueueItemState(DelegateThreadPool ownerThreadPool, object? parameter, ParameterizedThreadAction<T> parameterizedThreadAction, ThreadCompleteAction? onComplete = null)
+        internal QueueItemState(DelegateThreadPool ownerThreadPool, object? parameter, ParameterizedThreadActionDelegate<T> parameterizedThreadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
             StartTimestamp = DateTime.UtcNow;
             Parameter = parameter;
             OwnerThreadPool = ownerThreadPool;
             ParameterizedThreadAction = parameterizedThreadAction;
-            OnComplete = onComplete;
+            ThreadCompleteAction = onComplete;
         }
 
         /// <summary>
@@ -100,7 +107,7 @@ namespace NTDLS.DelegateThreadPooling
 
             IsComplete = true;
             _queueWaitEvent.Set();
-            OnComplete?.Invoke();
+            ThreadCompleteAction?.Invoke(this);
         }
 
         /// <summary>
@@ -189,7 +196,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <param name="updateDelay">The amount of time to wait between calls to the provided periodicUpdateAction().</param>
         /// <param name="periodicUpdateAction">The delegate function to call every n-milliseconds</param>
         /// <returns></returns>
-        public bool WaitForCompletion(TimeSpan updateDelay, PeriodicUpdateAction periodicUpdateAction)
+        public bool WaitForCompletion(TimeSpan updateDelay, PeriodicUpdateActionDelegate periodicUpdateAction)
         {
             var lastUpdate = DateTime.UtcNow;
 

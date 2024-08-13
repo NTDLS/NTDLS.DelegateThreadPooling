@@ -70,60 +70,7 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         /// <param name="threadAction">Returns a token that allows for waiting on the queued item.</param>
         /// <returns></returns>
-        public QueueItemState<T> Enqueue(ThreadAction threadAction)
-        {
-            ThrowAnyExceptions();
-
-            _collection.RemoveAll(o => o.IsComplete == true);
-
-            var queueToken = _threadPool.Enqueue<T>(threadAction);
-            _collection.Add(queueToken);
-            return queueToken;
-        }
-
-        /// <summary>
-        /// Adds a delegate function to the work queue.
-        /// </summary>
-        /// <param name="threadAction">Returns a token that allows for waiting on the queued item.</param>
-        /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
-        /// <returns></returns>
-        public QueueItemState<T> Enqueue(ThreadAction threadAction, ThreadCompleteAction onComplete)
-        {
-            ThrowAnyExceptions();
-
-            _collection.RemoveAll(o => o.IsComplete == true);
-
-            var queueToken = _threadPool.Enqueue<T>(threadAction, onComplete);
-            _collection.Add(queueToken);
-            return queueToken;
-        }
-
-        /// <summary>
-        /// Adds a delegate function to the work queue.
-        /// </summary>
-        /// <param name="parameter">User supplied parameter that will be passed to the delegate function.</param>
-        /// <param name="parameterizedThreadAction">The delegate function to execute when a thread is ready.</param>
-        /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
-        /// <returns></returns>
-        public QueueItemState<T> Enqueue(T parameter, ParameterizedThreadAction<T> parameterizedThreadAction, ThreadCompleteAction onComplete)
-        {
-            ThrowAnyExceptions();
-
-            _collection.RemoveAll(o => o.IsComplete == true);
-
-            var queueToken = _threadPool.Enqueue(parameter, parameterizedThreadAction, onComplete);
-            _collection.Add(queueToken);
-            return queueToken;
-        }
-
-
-        /// <summary>
-        /// Adds a delegate function to the work queue.
-        /// </summary>
-        /// <param name="parameter">User supplied parameter that will be passed to the delegate function.</param>
-        /// <param name="parameterizedThreadAction">The delegate function to execute when a thread is ready.</param>
-        /// <returns></returns>
-        public QueueItemState<T> Enqueue(T parameter, ParameterizedThreadAction<T> parameterizedThreadAction)
+        public QueueItemState<T> Enqueue(ThreadActionDelegate threadAction)
         {
             ThrowAnyExceptions();
 
@@ -164,7 +111,178 @@ namespace NTDLS.DelegateThreadPooling
 
             Interlocked.Increment(ref _currentQueueDepth);
 
-            var queueToken = _threadPool.Enqueue(parameter, parameterizedThreadAction, () =>
+            var queueToken = _threadPool.Enqueue<T>(threadAction, (QueueItemState<T> o) =>
+            {
+                Interlocked.Decrement(ref _currentQueueDepth);
+            });
+
+            _collection.Add(queueToken);
+            return queueToken;
+        }
+
+        /// <summary>
+        /// Adds a delegate function to the work queue.
+        /// </summary>
+        /// <param name="threadAction">Returns a token that allows for waiting on the queued item.</param>
+        /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
+        /// <returns></returns>
+        public QueueItemState<T> Enqueue(ThreadActionDelegate threadAction, ThreadCompleteActionDelegate<T> onComplete)
+        {
+            ThrowAnyExceptions();
+
+            _collection.RemoveAll(o => o.IsComplete == true);
+
+            //Enforce max queue depth size.
+            if (MaxChildQueueDepth > 0)
+            {
+                uint tryCount = 0;
+
+                while (_threadPool.KeepRunning)
+                {
+                    if (_currentQueueDepth < MaxChildQueueDepth && _currentQueueDepth < _threadPool.MaxQueueDepth)
+                    {
+                        break;
+                    }
+
+                    if (tryCount++ == _threadPool.SpinCount)
+                    {
+                        tryCount = 0;
+
+                        if (tryCount == 0)
+                        {
+                            ThrowAnyExceptions();
+                        }
+
+                        //Wait for a small amount of time or until the event is signaled (which 
+                        //indicates that an item has been dequeued thereby creating free space).
+                        _threadPool.ItemDequeuedWaitEvent.WaitOne(_threadPool.WaitDuration);
+                    }
+                }
+
+                if (_threadPool.KeepRunning == false)
+                {
+                    throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
+                }
+            }
+
+            Interlocked.Increment(ref _currentQueueDepth);
+
+            var queueToken = _threadPool.Enqueue<T>(threadAction, (QueueItemState<T> o) =>
+            {
+                onComplete(o);
+                Interlocked.Decrement(ref _currentQueueDepth);
+            });
+
+            _collection.Add(queueToken);
+            return queueToken;
+        }
+
+        /// <summary>
+        /// Adds a delegate function to the work queue.
+        /// </summary>
+        /// <param name="parameter">User supplied parameter that will be passed to the delegate function.</param>
+        /// <param name="parameterizedThreadAction">The delegate function to execute when a thread is ready.</param>
+        /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
+        /// <returns></returns>
+        public QueueItemState<T> Enqueue(T parameter, ParameterizedThreadActionDelegate<T> parameterizedThreadAction, ThreadCompleteActionDelegate<T> onComplete)
+        {
+            ThrowAnyExceptions();
+
+            _collection.RemoveAll(o => o.IsComplete == true);
+
+            //Enforce max queue depth size.
+            if (MaxChildQueueDepth > 0)
+            {
+                uint tryCount = 0;
+
+                while (_threadPool.KeepRunning)
+                {
+                    if (_currentQueueDepth < MaxChildQueueDepth && _currentQueueDepth < _threadPool.MaxQueueDepth)
+                    {
+                        break;
+                    }
+
+                    if (tryCount++ == _threadPool.SpinCount)
+                    {
+                        tryCount = 0;
+
+                        if (tryCount == 0)
+                        {
+                            ThrowAnyExceptions();
+                        }
+
+                        //Wait for a small amount of time or until the event is signaled (which 
+                        //indicates that an item has been dequeued thereby creating free space).
+                        _threadPool.ItemDequeuedWaitEvent.WaitOne(_threadPool.WaitDuration);
+                    }
+                }
+
+                if (_threadPool.KeepRunning == false)
+                {
+                    throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
+                }
+            }
+
+            Interlocked.Increment(ref _currentQueueDepth);
+
+            var queueToken = _threadPool.Enqueue<T>(parameter, parameterizedThreadAction, (QueueItemState<T> o) =>
+            {
+                onComplete(o);
+                Interlocked.Decrement(ref _currentQueueDepth);
+            });
+
+            _collection.Add(queueToken);
+            return queueToken;
+        }
+
+        /// <summary>
+        /// Adds a delegate function to the work queue.
+        /// </summary>
+        /// <param name="parameter">User supplied parameter that will be passed to the delegate function.</param>
+        /// <param name="parameterizedThreadAction">The delegate function to execute when a thread is ready.</param>
+        /// <returns></returns>
+        public QueueItemState<T> Enqueue(T parameter, ParameterizedThreadActionDelegate<T> parameterizedThreadAction)
+        {
+            ThrowAnyExceptions();
+
+            _collection.RemoveAll(o => o.IsComplete == true);
+
+            //Enforce max queue depth size.
+            if (MaxChildQueueDepth > 0)
+            {
+                uint tryCount = 0;
+
+                while (_threadPool.KeepRunning)
+                {
+                    if (_currentQueueDepth < MaxChildQueueDepth && _currentQueueDepth < _threadPool.MaxQueueDepth)
+                    {
+                        break;
+                    }
+
+                    if (tryCount++ == _threadPool.SpinCount)
+                    {
+                        tryCount = 0;
+
+                        if (tryCount == 0)
+                        {
+                            ThrowAnyExceptions();
+                        }
+
+                        //Wait for a small amount of time or until the event is signaled (which 
+                        //indicates that an item has been dequeued thereby creating free space).
+                        _threadPool.ItemDequeuedWaitEvent.WaitOne(_threadPool.WaitDuration);
+                    }
+                }
+
+                if (_threadPool.KeepRunning == false)
+                {
+                    throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
+                }
+            }
+
+            Interlocked.Increment(ref _currentQueueDepth);
+
+            var queueToken = _threadPool.Enqueue<T>(parameter, parameterizedThreadAction, (QueueItemState<T> o) =>
             {
                 Interlocked.Decrement(ref _currentQueueDepth);
             });
@@ -282,7 +400,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <param name="updateDelay">The amount of time to wait between calls to the provided periodicUpdateAction().</param>
         /// <param name="periodicUpdateAction">The delegate function to call every n-milliseconds</param>
         /// <exception cref="Exception"></exception>
-        public bool WaitForCompletion(TimeSpan updateDelay, PeriodicUpdateAction periodicUpdateAction)
+        public bool WaitForCompletion(TimeSpan updateDelay, PeriodicUpdateActionDelegate periodicUpdateAction)
         {
             var lastUpdate = DateTime.UtcNow;
 

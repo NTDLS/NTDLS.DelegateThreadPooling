@@ -26,8 +26,9 @@
       Fix for expired child workers.
       Optimization for completed child worker threads.
       Added completion decrementers to other child pool overrides.
+      Added completion parameter.
     </PackageReleaseNotes>
-    <Version>1.4.2</Version>
+    <Version>1.4.3</Version>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>Very high-performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
   </PropertyGroup>
