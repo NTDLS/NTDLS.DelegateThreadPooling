@@ -23,8 +23,10 @@
     <PackageReleaseNotes>
       Added optional max child-pool queue length.
       Reworked child thread pool exception handling, they are now thrown if not handled by the thread delegate.
+      Fix for expired child workers.
+      Optimization for completed child worker threads.
     </PackageReleaseNotes>
-    <Version>1.4.0</Version>
+    <Version>1.4.1</Version>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>Very high-performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
   </PropertyGroup>

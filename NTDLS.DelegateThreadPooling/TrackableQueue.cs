@@ -20,6 +20,13 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         public int MaxChildQueueDepth { get; set; }
 
+        int _currentQueueDepth;
+
+        /// <summary>
+        /// Returns the number of items currently waiting in this child queue.
+        /// </summary>
+        public int CurrentQueueDepth { get => _currentQueueDepth; }
+
         #region IEnumerable.
 
         /// <summary>
@@ -129,8 +136,7 @@ namespace NTDLS.DelegateThreadPooling
 
                 while (_threadPool.KeepRunning)
                 {
-                    int childQueueLength = _collection.Count;
-                    if (childQueueLength < MaxChildQueueDepth && childQueueLength < _threadPool.MaxQueueDepth)
+                    if (_currentQueueDepth < MaxChildQueueDepth && _currentQueueDepth < _threadPool.MaxQueueDepth)
                     {
                         break;
                     }
@@ -156,7 +162,13 @@ namespace NTDLS.DelegateThreadPooling
                 }
             }
 
-            var queueToken = _threadPool.Enqueue(parameter, parameterizedThreadAction);
+            Interlocked.Increment(ref _currentQueueDepth);
+
+            var queueToken = _threadPool.Enqueue(parameter, parameterizedThreadAction, () =>
+            {
+                Interlocked.Decrement(ref _currentQueueDepth);
+            });
+
             _collection.Add(queueToken);
             return queueToken;
         }
