@@ -16,3 +16,7 @@ NTDLS.DelegateThreadPool/obj/
 NTDLS.DelegateThreadPooling/bin/
 
 NTDLS.DelegateThreadPooling/obj/
+
+PerformanceTest/obj/
+
+PerformanceTest/bin/

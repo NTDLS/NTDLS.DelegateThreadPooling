@@ -370,7 +370,7 @@ namespace NTDLS.DelegateThreadPooling
                                 }
                             }
 
-                            //WE are using reflection so that the user code can enforce the type on the parameterized thread delegates.
+                            //We are using reflection so that the user code can enforce the type on the parameterized thread delegates.
                             method?.Invoke(queueToken.ParameterizedThreadAction, new[] { queueToken.Parameter });
                         }
                     }
@@ -380,7 +380,7 @@ namespace NTDLS.DelegateThreadPooling
                     }
                     queueToken.SetComplete();
 
-                    tryDequeueCount = 0; //Rest the spin count if the thread dequeued an item.
+                    tryDequeueCount = 0; //Reset the spin count if the thread dequeued an item.
                 }
                 else if (KeepRunning && tryDequeueCount++ >= SpinCount)
                 {
