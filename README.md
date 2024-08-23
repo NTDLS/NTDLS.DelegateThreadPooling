@@ -50,7 +50,7 @@ private static void NoCollectionExample()
 {
     Console.WriteLine("NoCollectionExample: Starting to enqueue items...");
 
-    var queueTokens = new List<QueueItemState<object>>();
+    var itemStates = new List<QueueItemState<object>>();
 
     //Enqueue work items as delegate functions.
     for (int i = 0; i < 100; i++)
@@ -60,13 +60,13 @@ private static void NoCollectionExample()
             Thread.Sleep(1000); //Do some work...
         });
 
-        queueTokens.Add(queueItemState);
+        itemStates.Add(queueItemState);
     }
 
     Console.WriteLine("Enqueue complete, waiting on completion.");
 
     //Wait on all of the workitems to complete.
-    queueTokens.ForEach(t => t.WaitForCompletion());
+    itemStates.ForEach(t => t.WaitForCompletion());
 
     Console.WriteLine("All workers are complete.");
 }

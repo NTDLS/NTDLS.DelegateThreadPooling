@@ -16,9 +16,9 @@ namespace NTDLS.DelegateThreadPooling
         public string? Name { get; set; }
 
         /// <summary>
-        /// The UTC date/time that the thread started.
+        /// The UTC date/time which the thread worker started.
         /// </summary>
-        public DateTime StartTimestamp { get; private set; }
+        public DateTime StartTimestamp { get; set; }
 
         /// <summary>
         /// The duration of the threads delegate operation.
@@ -82,7 +82,6 @@ namespace NTDLS.DelegateThreadPooling
 
         internal QueueItemState(DelegateThreadPool ownerThreadPool, ThreadActionDelegate threadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
-            StartTimestamp = DateTime.UtcNow;
             Parameter = null;
             OwnerThreadPool = ownerThreadPool;
             ThreadAction = threadAction;
@@ -91,7 +90,6 @@ namespace NTDLS.DelegateThreadPooling
 
         internal QueueItemState(DelegateThreadPool ownerThreadPool, object? parameter, ParameterizedThreadActionDelegate<T> parameterizedThreadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
-            StartTimestamp = DateTime.UtcNow;
             Parameter = parameter;
             OwnerThreadPool = ownerThreadPool;
             ParameterizedThreadAction = parameterizedThreadAction;

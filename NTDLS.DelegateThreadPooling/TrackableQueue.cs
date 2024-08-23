@@ -68,7 +68,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// Adds a delegate function to the work queue.
         /// </summary>
-        /// <param name="threadAction">Returns a token that allows for waiting on the queued item.</param>
+        /// <param name="threadAction">Returns a state that allows for waiting on the queued item.</param>
         /// <returns></returns>
         public QueueItemState<T> Enqueue(ThreadActionDelegate threadAction)
         {
@@ -111,19 +111,19 @@ namespace NTDLS.DelegateThreadPooling
 
             Interlocked.Increment(ref _currentQueueDepth);
 
-            var queueToken = _threadPool.Enqueue<T>(threadAction, (QueueItemState<T> o) =>
+            var itemState = _threadPool.Enqueue<T>(threadAction, (QueueItemState<T> o) =>
             {
                 Interlocked.Decrement(ref _currentQueueDepth);
             });
 
-            _collection.Add(queueToken);
-            return queueToken;
+            _collection.Add(itemState);
+            return itemState;
         }
 
         /// <summary>
         /// Adds a delegate function to the work queue.
         /// </summary>
-        /// <param name="threadAction">Returns a token that allows for waiting on the queued item.</param>
+        /// <param name="threadAction">Returns a state that allows for waiting on the queued item.</param>
         /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
         /// <returns></returns>
         public QueueItemState<T> Enqueue(ThreadActionDelegate threadAction, ThreadCompleteActionDelegate<T> onComplete)
@@ -167,14 +167,14 @@ namespace NTDLS.DelegateThreadPooling
 
             Interlocked.Increment(ref _currentQueueDepth);
 
-            var queueToken = _threadPool.Enqueue<T>(threadAction, (QueueItemState<T> o) =>
+            var itemState = _threadPool.Enqueue<T>(threadAction, (QueueItemState<T> o) =>
             {
                 onComplete(o);
                 Interlocked.Decrement(ref _currentQueueDepth);
             });
 
-            _collection.Add(queueToken);
-            return queueToken;
+            _collection.Add(itemState);
+            return itemState;
         }
 
         /// <summary>
@@ -225,14 +225,14 @@ namespace NTDLS.DelegateThreadPooling
 
             Interlocked.Increment(ref _currentQueueDepth);
 
-            var queueToken = _threadPool.Enqueue<T>(parameter, parameterizedThreadAction, (QueueItemState<T> o) =>
+            var itemState = _threadPool.Enqueue<T>(parameter, parameterizedThreadAction, (QueueItemState<T> o) =>
             {
                 onComplete(o);
                 Interlocked.Decrement(ref _currentQueueDepth);
             });
 
-            _collection.Add(queueToken);
-            return queueToken;
+            _collection.Add(itemState);
+            return itemState;
         }
 
         /// <summary>
@@ -282,13 +282,13 @@ namespace NTDLS.DelegateThreadPooling
 
             Interlocked.Increment(ref _currentQueueDepth);
 
-            var queueToken = _threadPool.Enqueue<T>(parameter, parameterizedThreadAction, (QueueItemState<T> o) =>
+            var itemState = _threadPool.Enqueue<T>(parameter, parameterizedThreadAction, (QueueItemState<T> o) =>
             {
                 Interlocked.Decrement(ref _currentQueueDepth);
             });
 
-            _collection.Add(queueToken);
-            return queueToken;
+            _collection.Add(itemState);
+            return itemState;
         }
 
         /// <summary>

@@ -144,7 +144,7 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         /// <param name="threadAction">The delegate function to execute when a thread is ready.</param>
         /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
-        /// <returns>Returns a token item that allows you to wait on completion or determine when the work item has been processed</returns>
+        /// <returns>Returns a state item that allows you to wait on completion or determine when the work item has been processed</returns>
         private QueueItemState<T> EnqueueInternalNonParameterized<T>(ThreadActionDelegate threadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
             //Enforce max queue depth size.
@@ -177,10 +177,10 @@ namespace NTDLS.DelegateThreadPooling
 
             return _actions.Use(o =>
             {
-                var queueToken = new QueueItemState<T>(this, threadAction, onComplete);
-                o.Enqueue(queueToken);
+                var itemState = new QueueItemState<T>(this, threadAction, onComplete);
+                o.Enqueue(itemState);
                 SignalIdleThread();
-                return queueToken;
+                return itemState;
             });
         }
 
@@ -189,7 +189,7 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         /// <param name="threadAction">The delegate function to execute when a thread is ready.</param>
         /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
-        /// <returns>Returns a token item that allows you to wait on completion or determine when the work item has been processed</returns>
+        /// <returns>Returns a state item that allows you to wait on completion or determine when the work item has been processed</returns>
         public QueueItemState<T> Enqueue<T>(ThreadActionDelegate threadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
             return EnqueueInternalNonParameterized<T>(threadAction, onComplete);
@@ -200,7 +200,7 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         /// <param name="threadAction">The delegate function to execute when a thread is ready.</param>
         /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
-        /// <returns>Returns a token item that allows you to wait on completion or determine when the work item has been processed</returns>
+        /// <returns>Returns a state item that allows you to wait on completion or determine when the work item has been processed</returns>
         public QueueItemState<object> Enqueue(ThreadActionDelegate threadAction, ThreadCompleteActionDelegate<object>? onComplete = null)
         {
             return EnqueueInternalNonParameterized<object>(threadAction, onComplete);
@@ -216,7 +216,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <param name="parameter">User supplied parameter that will be passed to the delegate function.</param>
         /// <param name="parameterizedThreadAction">The delegate function to execute when a thread is ready.</param>
         /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
-        /// <returns>Returns a token item that allows you to wait on completion or determine when the work item has been processed</returns>
+        /// <returns>Returns a state item that allows you to wait on completion or determine when the work item has been processed</returns>
         private QueueItemState<T> EnqueueInternalParameterized<T>(T? parameter,
             ParameterizedThreadActionDelegate<T> parameterizedThreadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
@@ -250,10 +250,10 @@ namespace NTDLS.DelegateThreadPooling
 
             return _actions.Use(o =>
             {
-                var queueToken = new QueueItemState<T>(this, parameter, parameterizedThreadAction, onComplete);
-                o.Enqueue(queueToken);
+                var itemState = new QueueItemState<T>(this, parameter, parameterizedThreadAction, onComplete);
+                o.Enqueue(itemState);
                 SignalIdleThread();
-                return queueToken;
+                return itemState;
             });
         }
 
@@ -263,7 +263,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <param name="parameter">User supplied parameter that will be passed to the delegate function.</param>
         /// <param name="parameterizedThreadAction">The delegate function to execute when a thread is ready.</param>
         /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
-        /// <returns>Returns a token item that allows you to wait on completion or determine when the work item has been processed</returns>
+        /// <returns>Returns a state item that allows you to wait on completion or determine when the work item has been processed</returns>
         public QueueItemState<T> Enqueue<T>(T? parameter, ParameterizedThreadActionDelegate<T> parameterizedThreadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
             return EnqueueInternalParameterized(parameter, parameterizedThreadAction, onComplete);
@@ -275,7 +275,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <param name="parameter">User supplied parameter that will be passed to the delegate function.</param>
         /// <param name="parameterizedThreadAction">The delegate function to execute when a thread is ready.</param>
         /// <param name="onComplete">The delegate function to call when the queue item is finished processing.</param>
-        /// <returns>Returns a token item that allows you to wait on completion or determine when the work item has been processed</returns>
+        /// <returns>Returns a state item that allows you to wait on completion or determine when the work item has been processed</returns>
         public QueueItemState<object> Enqueue(object? parameter, ParameterizedThreadActionDelegate<object> parameterizedThreadAction, ThreadCompleteActionDelegate<object>? onComplete = null)
         {
             return EnqueueInternalParameterized(parameter, parameterizedThreadAction, onComplete);
@@ -334,7 +334,7 @@ namespace NTDLS.DelegateThreadPooling
 
             while (KeepRunning)
             {
-                var queueToken = _actions.Use(o =>
+                var itemState = _actions.Use(o =>
                 {
                     if (o.TryDequeue(out var dequeued))
                     {
@@ -349,19 +349,20 @@ namespace NTDLS.DelegateThreadPooling
                     return dequeued;
                 });
 
-                if (KeepRunning && queueToken != null)
+                if (KeepRunning && itemState != null)
                 {
                     try
                     {
-                        if (queueToken.ThreadAction != null)
+                        if (itemState.ThreadAction != null)
                         {
-                            queueToken.ThreadAction();
+                            itemState.StartTimestamp = DateTime.UtcNow;
+                            itemState.ThreadAction();
                         }
-                        else if (queueToken.ParameterizedThreadAction != null)
+                        else if (itemState.ParameterizedThreadAction != null)
                         {
                             //Since we are using reflection to execute the ParameterizedThreadAction,
                             //  we are going to use a ConcurrentDictionary to cache to the invoke method.
-                            var actionType = queueToken.ParameterizedThreadAction.GetType();
+                            var actionType = itemState.ParameterizedThreadAction.GetType();
                             if (!_reflectionCache.TryGetValue(actionType, out var method))
                             {
                                 if ((method = actionType.GetMethod("Invoke")) != null)
@@ -371,14 +372,15 @@ namespace NTDLS.DelegateThreadPooling
                             }
 
                             //We are using reflection so that the user code can enforce the type on the parameterized thread delegates.
-                            method?.Invoke(queueToken.ParameterizedThreadAction, new[] { queueToken.Parameter });
+                            itemState.StartTimestamp = DateTime.UtcNow;
+                            method?.Invoke(itemState.ParameterizedThreadAction, new[] { itemState.Parameter });
                         }
                     }
                     catch (Exception ex)
                     {
-                        queueToken.SetException(ex);
+                        itemState.SetException(ex);
                     }
-                    queueToken.SetComplete();
+                    itemState.SetComplete();
 
                     tryDequeueCount = 0; //Reset the spin count if the thread dequeued an item.
                 }
