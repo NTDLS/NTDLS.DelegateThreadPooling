@@ -37,7 +37,7 @@ namespace TestHarness
         {
             Console.WriteLine("TypedDelegateExample: Starting to enqueue items...");
 
-            var queuedStates = _delegateThreadPool.CreateChildQueue<TypedDelegateParam>();
+            var childPool = _delegateThreadPool.CreateChildPool<TypedDelegateParam>();
 
             //Enqueue work items as delegate functions.
             for (int i = 0; i < 100; i++)
@@ -48,13 +48,13 @@ namespace TestHarness
                     SomeParameter2 = i * 2
                 };
 
-                queuedStates.Enqueue(param, TypedDelegateThread);
+                childPool.Enqueue(param, TypedDelegateThread);
             }
 
             Console.WriteLine("Enqueue complete, waiting on completion.");
 
             //Wait on all of the work items to complete.
-            queuedStates.WaitForCompletion();
+            childPool.WaitForCompletion();
 
             Console.WriteLine("All workers are complete.");
         }
@@ -67,12 +67,12 @@ namespace TestHarness
         {
             Console.WriteLine("ChildQueueExample: Starting to enqueue items...");
 
-            var queue = _delegateThreadPool.CreateChildQueue();
+            var childPool = _delegateThreadPool.CreateChildPool();
 
             //Enqueue work items as delegate functions.
             for (int i = 0; i < 100; i++)
             {
-                queue.Enqueue(() =>
+                childPool.Enqueue(() =>
                 {
                     Thread.Sleep(100); //Do some work...
                 });
@@ -81,7 +81,7 @@ namespace TestHarness
             Console.WriteLine("Enqueue complete, waiting on completion.");
 
             //Wait on all of the work items to complete.
-            queue.WaitForCompletion();
+            childPool.WaitForCompletion();
 
             Console.WriteLine("All workers are complete.");
         }
@@ -94,7 +94,7 @@ namespace TestHarness
         {
             Console.WriteLine("CollectionExample: Starting to enqueue items...");
 
-            var queueTokens = new List<QueueItemState<object>>();
+            var itemStates = new List<QueueItemState<object>>();
 
             //Enqueue work items as delegate functions.
             for (int i = 0; i < 100; i++)
@@ -104,13 +104,13 @@ namespace TestHarness
                     Thread.Sleep(100); //Do some work...
                 });
 
-                queueTokens.Add(queueItemState);
+                itemStates.Add(queueItemState);
             }
 
             Console.WriteLine("Enqueue complete, waiting on completion.");
 
             //Wait on all of the work items to complete.
-            queueTokens.ForEach(t => t.WaitForCompletion());
+            itemStates.ForEach(t => t.WaitForCompletion());
 
             Console.WriteLine("All workers are complete.");
         }

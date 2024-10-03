@@ -1,5 +1,6 @@
 ﻿using NTDLS.DelegateThreadPooling;
 using System.Diagnostics;
+using System.Threading;
 
 namespace PerformanceTest
 {
@@ -11,11 +12,11 @@ namespace PerformanceTest
         {
             var dtp = new DelegateThreadPool();
 
-            var childQueue = dtp.CreateChildQueue<Guid>();
+            var childPool = dtp.CreateChildPool<Guid>();
 
-            for (int item = 0; item < 10000; item++)
+            for (int item = 0; item < 100000; item++)
             {
-                childQueue.Enqueue(Guid.NewGuid(), (param) =>
+                childPool.Enqueue(Guid.NewGuid(), (param) =>
                 {
                     for (int workload = 0; workload < 10000; workload++)
                     {
@@ -26,12 +27,16 @@ namespace PerformanceTest
                 });
             }
 
-            childQueue.WaitForCompletion();
+            childPool.WaitForCompletion();
+            Console.WriteLine($"Parallel Duration: {childPool.TotalDuration:n0}, CPU Time: {childPool.TotalProcessorTime:n0}.");
 
+            Console.WriteLine("Thread stats:");
             foreach (var thread in dtp.Threads)
             {
-                Console.WriteLine($"Thread: {thread.ManagedThread.ManagedThreadId}: {thread.NativeThread?.TotalProcessorTime.TotalMilliseconds:n0} ");
+                Console.WriteLine($"Thread: {thread.ManagedThread.ManagedThreadId}, CPU Time: {thread.NativeThread?.TotalProcessorTime.TotalMilliseconds:n0}.");
             }
+
+            dtp.Stop();
         }
     }
 }

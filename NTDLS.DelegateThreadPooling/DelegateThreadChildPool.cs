@@ -7,13 +7,23 @@ namespace NTDLS.DelegateThreadPooling
     /// Contains a collection of queue item states. Allows for determining when a set of queued items have been completed.
     /// </summary>
     /// <typeparam name="T">The type which will be passed for parameterized thread delegates.</typeparam>
-    public class TrackableQueue<T> : IEnumerable<QueueItemState<T>>
+    public class DelegateThreadChildPool<T> : IEnumerable<QueueItemState<T>>
     {
         /// <summary>
         /// The collection of enqueued work items and their states.
         /// </summary>
         private readonly List<QueueItemState<T>> _collection = new();
         private readonly DelegateThreadPool _threadPool;
+
+        /// <summary>
+        /// The total processing duration of all workers in this queue.
+        /// </summary>
+        public double TotalDuration { get; private set; }
+
+        /// <summary>
+        /// The total CPU time expended for of all workers in this queue.
+        /// </summary>
+        public double TotalProcessorTime { get; private set; }
 
         /// <summary>
         /// The maximum number of items that can be in the trackable queue at a time. Additional calls to enqueue will block.
@@ -59,7 +69,7 @@ namespace NTDLS.DelegateThreadPooling
         public QueueItemState<T> Item(int index)
             => _collection[index];
 
-        internal TrackableQueue(DelegateThreadPool threadPool, int maxChildQueueDepth = 0)
+        internal DelegateThreadChildPool(DelegateThreadPool threadPool, int maxChildQueueDepth = 0)
         {
             MaxChildQueueDepth = maxChildQueueDepth;
             _threadPool = threadPool;
@@ -242,9 +252,6 @@ namespace NTDLS.DelegateThreadPooling
             _collection.Add(itemState);
             return itemState;
         }
-
-        double TotalDuration = new();
-        double TotalProcessorTime = new();
 
         /// <summary>
         /// Adds a delegate function to the work queue.

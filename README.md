@@ -27,12 +27,12 @@ private static void CollectionExample()
 {
     Console.WriteLine("CollectionExample: Starting to enqueue items...");
 
-    var queuedStates = _delegateThreadPool.CreateQueueStateCollection();
+    var childPool = _delegateThreadPool.CreateChildPool();
 
     //Enqueue work items as delegate functions.
     for (int i = 0; i < 100; i++)
     {
-        queuedStates.Enqueue(() =>
+        childPool.Enqueue(() =>
         {
             Thread.Sleep(1000); //Do some work...
         });
@@ -41,7 +41,7 @@ private static void CollectionExample()
     Console.WriteLine("Enqueue complete, waiting on completion.");
 
     //Wait on all of the workitems to complete.
-    queuedStates.WaitForCompletion();
+    childPool.WaitForCompletion();
 
     Console.WriteLine("All workers are complete.");
 }

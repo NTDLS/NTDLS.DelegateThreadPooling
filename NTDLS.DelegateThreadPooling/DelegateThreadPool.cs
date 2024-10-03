@@ -130,9 +130,9 @@ namespace NTDLS.DelegateThreadPooling
         /// Creates a QueueItemState collection. This allows you to keep track of a set
         /// of items that have been queued so that you can wait on them to complete.
         /// </summary>
-        public TrackableQueue<object> CreateChildQueue(int maxChildQueueDepth = 0)
+        public DelegateThreadChildPool<object> CreateChildPool(int maxChildQueueDepth = 0)
         {
-            return new TrackableQueue<object>(this, maxChildQueueDepth);
+            return new DelegateThreadChildPool<object>(this, maxChildQueueDepth);
         }
 
         /// <summary>
@@ -140,9 +140,9 @@ namespace NTDLS.DelegateThreadPooling
         /// of items that have been queued so that you can wait on them to complete.
         /// </summary>
         /// <typeparam name="T">The type which will be passed to the parameterized thread delegate.</typeparam>
-        public TrackableQueue<T> CreateChildQueue<T>(int maxChildQueueDepth = 0)
+        public DelegateThreadChildPool<T> CreateChildPool<T>(int maxChildQueueDepth = 0)
         {
-            return new TrackableQueue<T>(this, maxChildQueueDepth);
+            return new DelegateThreadChildPool<T>(this, maxChildQueueDepth);
         }
 
         #region Enqueue Non-Parameterized.
