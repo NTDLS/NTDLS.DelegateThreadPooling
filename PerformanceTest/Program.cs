@@ -9,25 +9,29 @@ namespace PerformanceTest
 
         static void Main(string[] args)
         {
-            var child = _threadPool.CreateChildQueue();
+            var dtp = new DelegateThreadPool();
 
-            while (true)
+            var childQueue = dtp.CreateChildQueue<Guid>();
+
+            for (int item = 0; item < 10000; item++)
             {
-                child.Enqueue(ThreadProc);
+                childQueue.Enqueue(Guid.NewGuid(), (param) =>
+                {
+                    for (int workload = 0; workload < 10000; workload++)
+                    {
+                        foreach (var c in param.ToString())
+                        {
+                        }
+                    }
+                });
             }
 
-            child.WaitForCompletion();
-        }
+            childQueue.WaitForCompletion();
 
-        static void ThreadProc()
-        {
-            Stopwatch stopwatch = Stopwatch.StartNew();
-
-            for(int i = 0; i < 100000; i ++)
+            foreach (var thread in dtp.Threads)
             {
-
+                Console.WriteLine($"Thread: {thread.ManagedThread.ManagedThreadId}: {thread.NativeThread?.TotalProcessorTime.TotalMilliseconds:n0} ");
             }
-            stopwatch.Stop();
         }
     }
 }
