@@ -65,6 +65,17 @@ namespace NTDLS.DelegateThreadPooling
             _threadPool = threadPool;
         }
 
+        private void RemoveCompletedQueueItemsAndTrackPerformance()
+        {
+            var completedItems = _collection.Where(o => o.IsComplete == true).ToList();
+            if (completedItems.Count > 0)
+            {
+                TotalDuration += completedItems.Sum(o => o.CompletionTime?.TotalMilliseconds ?? 0);
+                TotalProcessorTime += completedItems.Sum(o => o.ProcessorTime?.TotalMilliseconds ?? 0);
+            }
+            _collection.RemoveAll(o => o.IsComplete == true);
+        }
+
         /// <summary>
         /// Adds a delegate function to the work queue.
         /// </summary>
@@ -73,8 +84,7 @@ namespace NTDLS.DelegateThreadPooling
         public QueueItemState<T> Enqueue(ThreadActionDelegate threadAction)
         {
             ThrowAnyExceptions();
-
-            _collection.RemoveAll(o => o.IsComplete == true);
+            RemoveCompletedQueueItemsAndTrackPerformance();
 
             //Enforce max queue depth size.
             if (MaxChildQueueDepth > 0)
@@ -129,8 +139,7 @@ namespace NTDLS.DelegateThreadPooling
         public QueueItemState<T> Enqueue(ThreadActionDelegate threadAction, ThreadCompleteActionDelegate<T> onComplete)
         {
             ThrowAnyExceptions();
-
-            _collection.RemoveAll(o => o.IsComplete == true);
+            RemoveCompletedQueueItemsAndTrackPerformance();
 
             //Enforce max queue depth size.
             if (MaxChildQueueDepth > 0)
@@ -187,8 +196,7 @@ namespace NTDLS.DelegateThreadPooling
         public QueueItemState<T> Enqueue(T parameter, ParameterizedThreadActionDelegate<T> parameterizedThreadAction, ThreadCompleteActionDelegate<T> onComplete)
         {
             ThrowAnyExceptions();
-
-            _collection.RemoveAll(o => o.IsComplete == true);
+            RemoveCompletedQueueItemsAndTrackPerformance();
 
             //Enforce max queue depth size.
             if (MaxChildQueueDepth > 0)
@@ -235,6 +243,9 @@ namespace NTDLS.DelegateThreadPooling
             return itemState;
         }
 
+        double TotalDuration = new();
+        double TotalProcessorTime = new();
+
         /// <summary>
         /// Adds a delegate function to the work queue.
         /// </summary>
@@ -244,8 +255,7 @@ namespace NTDLS.DelegateThreadPooling
         public QueueItemState<T> Enqueue(T parameter, ParameterizedThreadActionDelegate<T> parameterizedThreadAction)
         {
             ThrowAnyExceptions();
-
-            _collection.RemoveAll(o => o.IsComplete == true);
+            RemoveCompletedQueueItemsAndTrackPerformance();
 
             //Enforce max queue depth size.
             if (MaxChildQueueDepth > 0)
@@ -327,6 +337,7 @@ namespace NTDLS.DelegateThreadPooling
             }
 
             ThrowAnyExceptions();
+            RemoveCompletedQueueItemsAndTrackPerformance();
 
             if (_threadPool.KeepRunning == false)
             {
@@ -364,6 +375,7 @@ namespace NTDLS.DelegateThreadPooling
             }
 
             ThrowAnyExceptions();
+            RemoveCompletedQueueItemsAndTrackPerformance();
 
             if (_threadPool.KeepRunning == false)
             {
@@ -419,6 +431,7 @@ namespace NTDLS.DelegateThreadPooling
             }
 
             ThrowAnyExceptions();
+            RemoveCompletedQueueItemsAndTrackPerformance();
 
             if (_threadPool.KeepRunning == false)
             {

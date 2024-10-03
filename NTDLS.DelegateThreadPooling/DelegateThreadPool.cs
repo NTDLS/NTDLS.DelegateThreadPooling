@@ -1,7 +1,10 @@
 ﻿using NTDLS.Semaphore;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
 using static NTDLS.DelegateThreadPooling.PooledThreadEnvelope;
+using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace NTDLS.DelegateThreadPooling
 {
@@ -41,6 +44,11 @@ namespace NTDLS.DelegateThreadPooling
         public delegate void ParameterizedThreadActionDelegate<T>(T parameter);
 
         private readonly List<PooledThreadEnvelope> _threadEnvelopes = new();
+
+        /// <summary>
+        /// Provides read-only access to threads in the thread pool for diagnostics and performance reporting.
+        /// </summary>
+        public IReadOnlyList<PooledThreadEnvelope> Threads { get => _threadEnvelopes; }
 
         /// <summary>
         /// The maximum number of items that can be in the queue at a time. Additional calls to enqueue will block.
@@ -122,9 +130,9 @@ namespace NTDLS.DelegateThreadPooling
         /// Creates a QueueItemState collection. This allows you to keep track of a set
         /// of items that have been queued so that you can wait on them to complete.
         /// </summary>
-        public TrackableQueue<object> CreateChildQueue()
+        public TrackableQueue<object> CreateChildQueue(int maxChildQueueDepth = 0)
         {
-            return new TrackableQueue<object>(this);
+            return new TrackableQueue<object>(this, maxChildQueueDepth);
         }
 
         /// <summary>
@@ -287,7 +295,7 @@ namespace NTDLS.DelegateThreadPooling
         {
             //Find the first idle thread and signal it. Its ok if we don't find one, because the first
             //  thread to complete its workload will automatically pickup the next item in the queue.
-            _threadEnvelopes.Where(o => o.State == PooledThreadState.Idle).FirstOrDefault()?.Signal();
+            _threadEnvelopes.Where(o => o.State == PooledThreadState.Waiting).FirstOrDefault()?.Signal();
         }
 
         /// <summary>
@@ -317,6 +325,9 @@ namespace NTDLS.DelegateThreadPooling
             }
         }
 
+        [DllImport("kernel32.dll")]
+        private static extern int GetCurrentThreadId();
+
         /// <summary>
         /// Executes the enqueued delegates, both parameterized and non-parameterized.
         /// </summary>
@@ -330,8 +341,22 @@ namespace NTDLS.DelegateThreadPooling
 
             var threadEnvelope = (PooledThreadEnvelope)internalThreadObj;
 
-            uint tryDequeueCount = 0;
+            #region Diagnostics.
 
+            int nativeThreadId = GetCurrentThreadId();
+            var process = Process.GetCurrentProcess();
+            foreach (ProcessThread processThread in process.Threads)
+            {
+                if (processThread.Id == nativeThreadId)
+                {
+                    threadEnvelope.NativeThread = processThread;
+                    break;
+                }
+            }
+
+            #endregion
+
+            uint tryDequeueCount = 0;
             while (KeepRunning)
             {
                 var itemState = _actions.Use(o =>
@@ -351,11 +376,14 @@ namespace NTDLS.DelegateThreadPooling
 
                 if (KeepRunning && itemState != null)
                 {
+                    var startTotalProcessorTime = threadEnvelope.NativeThread?.TotalProcessorTime;
+
                     try
                     {
                         if (itemState.ThreadAction != null)
                         {
                             itemState.StartTimestamp = DateTime.UtcNow;
+
                             itemState.ThreadAction();
                         }
                         else if (itemState.ParameterizedThreadAction != null)
@@ -373,6 +401,7 @@ namespace NTDLS.DelegateThreadPooling
 
                             //We are using reflection so that the user code can enforce the type on the parameterized thread delegates.
                             itemState.StartTimestamp = DateTime.UtcNow;
+
                             method?.Invoke(itemState.ParameterizedThreadAction, new[] { itemState.Parameter });
                         }
                     }
@@ -380,7 +409,8 @@ namespace NTDLS.DelegateThreadPooling
                     {
                         itemState.SetException(ex);
                     }
-                    itemState.SetComplete();
+
+                    itemState.SetComplete(threadEnvelope.NativeThread?.TotalProcessorTime - startTotalProcessorTime);
 
                     tryDequeueCount = 0; //Reset the spin count if the thread dequeued an item.
                 }
@@ -388,7 +418,7 @@ namespace NTDLS.DelegateThreadPooling
                 {
                     //We have tried to dequeue too many times without success, just sleep.
 
-                    threadEnvelope.State = PooledThreadState.Idle;
+                    threadEnvelope.State = PooledThreadState.Waiting;
                     if (threadEnvelope.Wait())
                     {
                         threadEnvelope.State = PooledThreadState.Executing;

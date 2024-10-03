@@ -26,6 +26,11 @@ namespace NTDLS.DelegateThreadPooling
         public TimeSpan? CompletionTime { get; private set; }
 
         /// <summary>
+        /// The amount of CPU time consumed by the threads delegate operation.
+        /// </summary>
+        public TimeSpan? ProcessorTime { get; set; }
+
+        /// <summary>
         /// Delegate which is called once the thread completes.
         /// </summary>
         public ThreadCompleteActionDelegate<T>? ThreadCompleteAction { get; private set; }
@@ -99,9 +104,10 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// Sets the thread state as complete.
         /// </summary>
-        public void SetComplete()
+        public void SetComplete(TimeSpan? processorTime)
         {
             CompletionTime = DateTime.UtcNow - StartTimestamp;
+            ProcessorTime = processorTime;
 
             IsComplete = true;
             _queueWaitEvent.Set();
@@ -127,7 +133,7 @@ namespace NTDLS.DelegateThreadPooling
             if (IsComplete == false)
             {
                 WasAborted = true;
-                SetComplete();
+                SetComplete(TimeSpan.Zero);
                 return true;
             }
             return false;

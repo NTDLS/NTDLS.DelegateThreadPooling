@@ -19,7 +19,7 @@ namespace NTDLS.DelegateThreadPooling
 
         DelegateThreadPool OwnerThreadPool { get; }
 
-        void SetComplete();
+        void SetComplete(TimeSpan? processorTime);
         void SetException(Exception ex);
     }
 }
