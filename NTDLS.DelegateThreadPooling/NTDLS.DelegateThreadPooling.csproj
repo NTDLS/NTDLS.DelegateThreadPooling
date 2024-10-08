@@ -21,10 +21,9 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>serialization;disk;persistence</PackageTags>
     <PackageReleaseNotes>
-        Added performance and thread evaluation.
-        Fixed child pool overload for limiting queue size.
+        Removed parameterless overloads on generic child enque.
     </PackageReleaseNotes>
-    <Version>1.5.0</Version>
+    <Version>1.5.1</Version>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>Very high-performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
   </PropertyGroup>

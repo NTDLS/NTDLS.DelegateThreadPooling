@@ -1,6 +1,4 @@
 ﻿using NTDLS.DelegateThreadPooling;
-using System.Diagnostics;
-using System.Threading;
 
 namespace PerformanceTest
 {

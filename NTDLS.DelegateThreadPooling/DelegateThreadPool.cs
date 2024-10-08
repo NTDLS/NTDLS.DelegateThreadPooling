@@ -2,9 +2,8 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
-using static NTDLS.DelegateThreadPooling.PooledThreadEnvelope;
-using System.Linq;
 using System.Runtime.InteropServices;
+using static NTDLS.DelegateThreadPooling.PooledThreadEnvelope;
 
 namespace NTDLS.DelegateThreadPooling
 {
@@ -130,9 +129,9 @@ namespace NTDLS.DelegateThreadPooling
         /// Creates a QueueItemState collection. This allows you to keep track of a set
         /// of items that have been queued so that you can wait on them to complete.
         /// </summary>
-        public DelegateThreadChildPool<object> CreateChildPool(int maxChildQueueDepth = 0)
+        public DelegateThreadChildPool CreateChildPool(int maxChildQueueDepth = 0)
         {
-            return new DelegateThreadChildPool<object>(this, maxChildQueueDepth);
+            return new DelegateThreadChildPool(this, maxChildQueueDepth);
         }
 
         /// <summary>
