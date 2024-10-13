@@ -21,9 +21,9 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>serialization;disk;persistence</PackageTags>
     <PackageReleaseNotes>
-        Removed parameterless overloads on generic child enque.
+      Dependency updates.
     </PackageReleaseNotes>
-    <Version>1.5.1</Version>
+    <Version>1.5.3</Version>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>Very high-performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
   </PropertyGroup>
@@ -44,7 +44,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NTDLS.Semaphore" Version="3.4.2" />
+    <PackageReference Include="NTDLS.Semaphore" Version="3.4.3" />
   </ItemGroup>
 
 </Project>
