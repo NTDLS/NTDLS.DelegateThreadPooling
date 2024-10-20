@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Reflection;
 using static NTDLS.DelegateThreadPooling.DelegateThreadPool;
 
 namespace NTDLS.DelegateThreadPooling
@@ -293,7 +294,7 @@ namespace NTDLS.DelegateThreadPooling
             {
                 if (item.Exception != null)
                 {
-                    exceptions.Add(item.Exception);
+                    exceptions.Add(item.Exception.GetBaseException());
                 }
             }
             if (exceptions.Any())
