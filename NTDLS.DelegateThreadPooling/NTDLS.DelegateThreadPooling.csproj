@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
@@ -13,7 +13,7 @@
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
     <Product>NTDLS.DelegateThreadPooling</Product>
-    <Copyright>Copyright © 2024 NetworkDLS</Copyright>
+    <Copyright>Copyright © 2025 NetworkDLS</Copyright>
     <PackageProjectUrl>https://github.com/NTDLS/NTDLS.DelegateThreadPooling</PackageProjectUrl>
     <PackageIcon>Logo.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -23,7 +23,7 @@
     <PackageReleaseNotes>
       Dependency updates.
     </PackageReleaseNotes>
-    <Version>1.5.8</Version>
+    <Version>1.5.9</Version>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>Very high-performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
   </PropertyGroup>
@@ -44,7 +44,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NTDLS.Semaphore" Version="3.4.9" />
+    <PackageReference Include="NTDLS.Semaphore" Version="3.4.10" />
   </ItemGroup>
 
 </Project>
