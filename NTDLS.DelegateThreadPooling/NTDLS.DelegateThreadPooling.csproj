@@ -15,6 +15,7 @@
     <Copyright>Copyright © 2025 NetworkDLS</Copyright>
     <PackageProjectUrl>https://github.com/NTDLS/NTDLS.DelegateThreadPooling</PackageProjectUrl>
     <PackageIcon>Logo.png</PackageIcon>
+    <ApplicationIcon>Image.ico</ApplicationIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.DelegateThreadPooling</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -22,14 +23,11 @@
     <PackageReleaseNotes>
       Removed icon.
     </PackageReleaseNotes>
-    <Version>1.5.13</Version>
+    <Version>1.5.14</Version>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>Very high-performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Content Include="Image.ico" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="..\Images\Logo.png">
