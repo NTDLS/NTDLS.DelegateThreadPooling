@@ -42,9 +42,11 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         public PooledThreadState State { get; set; }
 
+        /// <summary>
+        /// Tell the thread to check the queue.
+        /// </summary>
         internal void Signal() => WaitEvent.Set();
         internal bool Wait() => WaitEvent.WaitOne();
-
         internal void Join() => ManagedThread.Join();
 
         internal PooledThreadEnvelope(ParameterizedThreadStart proc)

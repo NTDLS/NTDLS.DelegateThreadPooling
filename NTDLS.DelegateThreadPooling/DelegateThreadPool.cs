@@ -12,6 +12,13 @@ namespace NTDLS.DelegateThreadPooling
     /// </summary>
     public class DelegateThreadPool : IDisposable
     {
+        /// <summary>
+        /// Used for the QueueItemStates to signal their completion.
+        /// This is not used at the DelegateThreadPool level, but is shared across all
+        /// QueueItemStates to reduce handle count at the slight tradeoff to extra completion checks.
+        /// </summary>
+        internal readonly AutoResetEvent QueueItemStateCompletion = new(false);
+
         private static readonly ConcurrentDictionary<Type, MethodInfo> _reflectionCache = new();
 
         /// <summary>
@@ -292,9 +299,9 @@ namespace NTDLS.DelegateThreadPooling
 
         private void SignalIdleThread()
         {
-            //Find the first idle thread and signal it. Its ok if we don't find one, because the first
-            //  thread to complete its workload will automatically pickup the next item in the queue.
-            _threadEnvelopes.Where(o => o.State == PooledThreadState.Waiting).FirstOrDefault()?.Signal();
+                //Find the first idle thread and signal it. Its ok if we don't find one, because the first
+                //  thread to complete its workload will automatically pickup the next item in the queue.
+                _threadEnvelopes.Where(o => o.State == PooledThreadState.Waiting).FirstOrDefault()?.Signal();
         }
 
         /// <summary>
@@ -362,7 +369,7 @@ namespace NTDLS.DelegateThreadPooling
                 {
                     if (o.TryDequeue(out var dequeued))
                     {
-                        //Enqueue might be blocking due to enforcing max queue depth size, tell it that the queue size has decreased.
+                        //Enqueue might be blocking due to enforcing max queue depth size, tell it that the queue depth has decreased.
                         ItemDequeuedWaitEvent.Set();
                     }
                     if (dequeued?.IsComplete == true)

@@ -8,8 +8,6 @@ namespace NTDLS.DelegateThreadPooling
     /// <typeparam name="T">The type which will be passed for parameterized thread delegates.</typeparam>
     public class QueueItemState<T> : IQueueItemState
     {
-        private readonly AutoResetEvent _queueWaitEvent = new(false);
-
         /// <summary>
         /// A name that can be assigned to the thread state object for tracking by the user.
         /// </summary>
@@ -110,7 +108,7 @@ namespace NTDLS.DelegateThreadPooling
             ProcessorTime = processorTime;
 
             IsComplete = true;
-            _queueWaitEvent.Set();
+            OwnerThreadPool.QueueItemStateCompletion.Set();
             ThreadCompleteAction?.Invoke(this);
         }
 
@@ -155,7 +153,7 @@ namespace NTDLS.DelegateThreadPooling
                 if (tryCount++ == OwnerThreadPool.SpinCount)
                 {
                     tryCount = 0;
-                    _queueWaitEvent.WaitOne(OwnerThreadPool.WaitDuration);
+                    OwnerThreadPool.QueueItemStateCompletion.WaitOne(OwnerThreadPool.WaitDuration);
 
                     if ((DateTime.UtcNow - startTime).TotalMilliseconds > maxMillisecondsToWait)
                     {
@@ -184,7 +182,7 @@ namespace NTDLS.DelegateThreadPooling
                 if (tryCount++ == OwnerThreadPool.SpinCount)
                 {
                     tryCount = 0;
-                    _queueWaitEvent.WaitOne(OwnerThreadPool.WaitDuration);
+                    OwnerThreadPool.QueueItemStateCompletion.WaitOne(OwnerThreadPool.WaitDuration);
                 }
             }
 
@@ -210,7 +208,7 @@ namespace NTDLS.DelegateThreadPooling
                 if (tryCount++ == OwnerThreadPool.SpinCount)
                 {
                     tryCount = 0;
-                    _queueWaitEvent.WaitOne(OwnerThreadPool.WaitDuration);
+                    OwnerThreadPool.QueueItemStateCompletion.WaitOne(OwnerThreadPool.WaitDuration);
 
                     if ((DateTime.UtcNow - lastUpdate).TotalMilliseconds > updateDelay.Milliseconds)
                     {
