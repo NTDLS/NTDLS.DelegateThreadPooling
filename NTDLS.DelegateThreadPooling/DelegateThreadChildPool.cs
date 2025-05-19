@@ -100,14 +100,14 @@ namespace NTDLS.DelegateThreadPooling
             {
                 uint tryCount = 0;
 
-                while (_threadPool.KeepRunning)
+                while (_threadPool.KeepThreadPoolRunning)
                 {
-                    if (_currentQueueDepth < MaxChildQueueDepth && _currentQueueDepth < _threadPool.MaxQueueDepth)
+                    if (_currentQueueDepth < MaxChildQueueDepth && _currentQueueDepth < _threadPool.Configuration.MaximumQueueDepth)
                     {
                         break;
                     }
 
-                    if (tryCount++ == _threadPool.SpinCount)
+                    if (tryCount++ == _threadPool.Configuration.SpinCount)
                     {
                         tryCount = 0;
 
@@ -118,11 +118,11 @@ namespace NTDLS.DelegateThreadPooling
 
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
-                        _threadPool.ItemDequeuedWaitEvent.WaitOne(_threadPool.WaitDuration);
+                        _threadPool.ItemDequeuedWaitEvent.WaitOne(_threadPool.Configuration.WaitDuration);
                     }
                 }
 
-                if (_threadPool.KeepRunning == false)
+                if (_threadPool.KeepThreadPoolRunning == false)
                 {
                     throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
                 }
@@ -155,14 +155,14 @@ namespace NTDLS.DelegateThreadPooling
             {
                 uint tryCount = 0;
 
-                while (_threadPool.KeepRunning)
+                while (_threadPool.KeepThreadPoolRunning)
                 {
-                    if (_currentQueueDepth < MaxChildQueueDepth && _currentQueueDepth < _threadPool.MaxQueueDepth)
+                    if (_currentQueueDepth < MaxChildQueueDepth && _currentQueueDepth < _threadPool.Configuration.MaximumQueueDepth)
                     {
                         break;
                     }
 
-                    if (tryCount++ == _threadPool.SpinCount)
+                    if (tryCount++ == _threadPool.Configuration.SpinCount)
                     {
                         tryCount = 0;
 
@@ -173,11 +173,11 @@ namespace NTDLS.DelegateThreadPooling
 
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
-                        _threadPool.ItemDequeuedWaitEvent.WaitOne(_threadPool.WaitDuration);
+                        _threadPool.ItemDequeuedWaitEvent.WaitOne(_threadPool.Configuration.WaitDuration);
                     }
                 }
 
-                if (_threadPool.KeepRunning == false)
+                if (_threadPool.KeepThreadPoolRunning == false)
                 {
                     throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
                 }
@@ -212,14 +212,14 @@ namespace NTDLS.DelegateThreadPooling
             {
                 uint tryCount = 0;
 
-                while (_threadPool.KeepRunning)
+                while (_threadPool.KeepThreadPoolRunning)
                 {
-                    if (_currentQueueDepth < MaxChildQueueDepth && _currentQueueDepth < _threadPool.MaxQueueDepth)
+                    if (_currentQueueDepth < MaxChildQueueDepth && _currentQueueDepth < _threadPool.Configuration.MaximumQueueDepth)
                     {
                         break;
                     }
 
-                    if (tryCount++ == _threadPool.SpinCount)
+                    if (tryCount++ == _threadPool.Configuration.SpinCount)
                     {
                         tryCount = 0;
 
@@ -230,11 +230,11 @@ namespace NTDLS.DelegateThreadPooling
 
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
-                        _threadPool.ItemDequeuedWaitEvent.WaitOne(_threadPool.WaitDuration);
+                        _threadPool.ItemDequeuedWaitEvent.WaitOne(_threadPool.Configuration.WaitDuration);
                     }
                 }
 
-                if (_threadPool.KeepRunning == false)
+                if (_threadPool.KeepThreadPoolRunning == false)
                 {
                     throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
                 }
@@ -268,14 +268,14 @@ namespace NTDLS.DelegateThreadPooling
             {
                 uint tryCount = 0;
 
-                while (_threadPool.KeepRunning)
+                while (_threadPool.KeepThreadPoolRunning)
                 {
-                    if (_currentQueueDepth < MaxChildQueueDepth && _currentQueueDepth < _threadPool.MaxQueueDepth)
+                    if (_currentQueueDepth < MaxChildQueueDepth && _currentQueueDepth < _threadPool.Configuration.MaximumQueueDepth)
                     {
                         break;
                     }
 
-                    if (tryCount++ == _threadPool.SpinCount)
+                    if (tryCount++ == _threadPool.Configuration.SpinCount)
                     {
                         tryCount = 0;
 
@@ -286,11 +286,11 @@ namespace NTDLS.DelegateThreadPooling
 
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
-                        _threadPool.ItemDequeuedWaitEvent.WaitOne(_threadPool.WaitDuration);
+                        _threadPool.ItemDequeuedWaitEvent.WaitOne(_threadPool.Configuration.WaitDuration);
                     }
                 }
 
-                if (_threadPool.KeepRunning == false)
+                if (_threadPool.KeepThreadPoolRunning == false)
                 {
                     throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
                 }
@@ -336,7 +336,7 @@ namespace NTDLS.DelegateThreadPooling
             foreach (var item in _collection)
             {
                 item.WaitForCompletion();
-                if (_threadPool.KeepRunning == false)
+                if (_threadPool.KeepThreadPoolRunning == false)
                 {
                     break;
                 }
@@ -345,7 +345,7 @@ namespace NTDLS.DelegateThreadPooling
             ThrowAnyExceptions();
             RemoveCompletedQueueItemsAndTrackPerformance();
 
-            if (_threadPool.KeepRunning == false)
+            if (_threadPool.KeepThreadPoolRunning == false)
             {
                 throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
             }
@@ -374,7 +374,7 @@ namespace NTDLS.DelegateThreadPooling
                     return false;
                 }
 
-                if (_threadPool.KeepRunning == false)
+                if (_threadPool.KeepThreadPoolRunning == false)
                 {
                     break;
                 }
@@ -383,7 +383,7 @@ namespace NTDLS.DelegateThreadPooling
             ThrowAnyExceptions();
             RemoveCompletedQueueItemsAndTrackPerformance();
 
-            if (_threadPool.KeepRunning == false)
+            if (_threadPool.KeepThreadPoolRunning == false)
             {
                 throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
             }
@@ -439,7 +439,7 @@ namespace NTDLS.DelegateThreadPooling
             ThrowAnyExceptions();
             RemoveCompletedQueueItemsAndTrackPerformance();
 
-            if (_threadPool.KeepRunning == false)
+            if (_threadPool.KeepThreadPoolRunning == false)
             {
                 throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
             }

@@ -148,12 +148,12 @@ namespace NTDLS.DelegateThreadPooling
             var startTime = DateTime.UtcNow;
 
             uint tryCount = 0;
-            while (OwnerThreadPool.KeepRunning && IsComplete == false)
+            while (OwnerThreadPool.KeepThreadPoolRunning && IsComplete == false)
             {
-                if (tryCount++ == OwnerThreadPool.SpinCount)
+                if (tryCount++ == OwnerThreadPool.Configuration.SpinCount)
                 {
                     tryCount = 0;
-                    OwnerThreadPool.QueueItemStateCompletion.WaitOne(OwnerThreadPool.WaitDuration);
+                    OwnerThreadPool.QueueItemStateCompletion.WaitOne(OwnerThreadPool.Configuration.WaitDuration);
 
                     if ((DateTime.UtcNow - startTime).TotalMilliseconds > maxMillisecondsToWait)
                     {
@@ -162,7 +162,7 @@ namespace NTDLS.DelegateThreadPooling
                 }
             }
 
-            if (OwnerThreadPool.KeepRunning == false)
+            if (OwnerThreadPool.KeepThreadPoolRunning == false)
             {
                 throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
             }
@@ -177,16 +177,16 @@ namespace NTDLS.DelegateThreadPooling
         public void WaitForCompletion()
         {
             uint tryCount = 0;
-            while (OwnerThreadPool.KeepRunning && IsComplete == false)
+            while (OwnerThreadPool.KeepThreadPoolRunning && IsComplete == false)
             {
-                if (tryCount++ == OwnerThreadPool.SpinCount)
+                if (tryCount++ == OwnerThreadPool.Configuration.SpinCount)
                 {
                     tryCount = 0;
-                    OwnerThreadPool.QueueItemStateCompletion.WaitOne(OwnerThreadPool.WaitDuration);
+                    OwnerThreadPool.QueueItemStateCompletion.WaitOne(OwnerThreadPool.Configuration.WaitDuration);
                 }
             }
 
-            if (OwnerThreadPool.KeepRunning == false)
+            if (OwnerThreadPool.KeepThreadPoolRunning == false)
             {
                 throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
             }
@@ -203,12 +203,12 @@ namespace NTDLS.DelegateThreadPooling
             var lastUpdate = DateTime.UtcNow;
 
             uint tryCount = 0;
-            while (OwnerThreadPool.KeepRunning && IsComplete == false)
+            while (OwnerThreadPool.KeepThreadPoolRunning && IsComplete == false)
             {
-                if (tryCount++ == OwnerThreadPool.SpinCount)
+                if (tryCount++ == OwnerThreadPool.Configuration.SpinCount)
                 {
                     tryCount = 0;
-                    OwnerThreadPool.QueueItemStateCompletion.WaitOne(OwnerThreadPool.WaitDuration);
+                    OwnerThreadPool.QueueItemStateCompletion.WaitOne(OwnerThreadPool.Configuration.WaitDuration);
 
                     if ((DateTime.UtcNow - lastUpdate).TotalMilliseconds > updateDelay.Milliseconds)
                     {
@@ -221,7 +221,7 @@ namespace NTDLS.DelegateThreadPooling
                 }
             }
 
-            if (OwnerThreadPool.KeepRunning == false)
+            if (OwnerThreadPool.KeepThreadPoolRunning == false)
             {
                 throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
             }

@@ -18,8 +18,13 @@ namespace NTDLS.DelegateThreadPooling
         /// QueueItemStates to reduce handle count at the slight tradeoff to extra completion checks.
         /// </summary>
         internal readonly AutoResetEvent QueueItemStateCompletion = new(false);
+        internal DelegateThreadPoolConfiguration Configuration { get; private set; }
 
         private static readonly ConcurrentDictionary<Type, MethodInfo> _reflectionCache = new();
+        private readonly Timer _growthMonitorTimer;
+        private DateTime? _lastOverloadedTime = null;
+        private DateTime? _lastUnderloadTime = null;
+        private int? _autoGrowthOverloadThresholdMs = null;
 
         /// <summary>
         /// The delegate prototype for the work queue.
@@ -49,86 +54,130 @@ namespace NTDLS.DelegateThreadPooling
         /// <param name="parameter">The user supplied parameter that will be passed to the delegate function.</param>
         public delegate void ParameterizedThreadActionDelegate<T>(T parameter);
 
-        private readonly List<PooledThreadEnvelope> _threadEnvelopes = new();
+        private readonly PessimisticCriticalResource<List<PooledThreadEnvelope>> _threadEnvelopes = new();
 
         /// <summary>
         /// Provides read-only access to threads in the thread pool for diagnostics and performance reporting.
         /// </summary>
-        public IReadOnlyList<PooledThreadEnvelope> Threads { get => _threadEnvelopes; }
-
-        /// <summary>
-        /// The maximum number of items that can be in the queue at a time. Additional calls to enqueue will block.
-        /// </summary>
-        public int MaxQueueDepth { get; set; }
+        public IReadOnlyList<PooledThreadEnvelope> Threads { get => _threadEnvelopes.Use(o => o); }
 
         /// <summary>
         /// The number of threads in the thread pool.
         /// </summary>
-        public int ThreadCount { get; private set; }
-
-        /// <summary>
-        /// The number of times to repeatedly check the internal lock availability before going to going to sleep.
-        /// </summary>
-        public int SpinCount { get; set; } = 100;
-
-        /// <summary>
-        /// The number of milliseconds to wait for queued items after each expiration of SpinCount.
-        /// </summary>
-        public int WaitDuration { get; set; } = 1;
+        public int ThreadCount { get => _threadEnvelopes.Use(o => o.Count); }
 
         private readonly PessimisticCriticalResource<Queue<IQueueItemState>> _actions = new();
         internal AutoResetEvent ItemDequeuedWaitEvent { get; private set; } = new(true);
-        internal bool KeepRunning { get; private set; } = false;
+        internal bool KeepThreadPoolRunning { get; private set; } = false;
 
         /// <summary>
         /// Starts n worker threads, where n is the number of CPU cores available to the operating system.
         /// </summary>
         public DelegateThreadPool()
         {
-            ThreadCount = Environment.ProcessorCount;
-            KeepRunning = true;
+            KeepThreadPoolRunning = true;
 
-            for (int i = 0; i < ThreadCount; i++)
+            Configuration = new DelegateThreadPoolConfiguration();
+            _threadEnvelopes.Use(o =>
             {
-                _threadEnvelopes.Add(new PooledThreadEnvelope(InternalThreadProc));
-            }
+                while (o.Count < Configuration.InitialThreadCount)
+                {
+                    o.Add(new PooledThreadEnvelope(Configuration, InternalThreadProc));
+                }
+            });
+
+            _growthMonitorTimer = new Timer(AutoGrowthMonitorCallback, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(500));
         }
 
         /// <summary>
         /// Defines the pool size and starts the worker threads.
         /// </summary>
-        /// <param name="threadCount">The number of threads to create.</param>
-        ///<param name="maxQueueDepth">The maximum number of items that can be queued before blocking. Zero indicates unlimited.</param>
-        public DelegateThreadPool(int threadCount, int maxQueueDepth)
+        /// <param name="configuration">General configuration for the delegate thread pool.</param>
+        public DelegateThreadPool(DelegateThreadPoolConfiguration configuration)
         {
-            if (maxQueueDepth < 0)
+            Configuration = configuration;
+
+            if (Configuration.MaximumQueueDepth < 0)
             {
-                maxQueueDepth = 0;
+                throw new ArgumentOutOfRangeException("MaximumQueueDepth must be equal or greater than 0.");
             }
 
-            ThreadCount = threadCount;
-            MaxQueueDepth = maxQueueDepth;
-            KeepRunning = true;
-
-            for (int i = 0; i < ThreadCount; i++)
+            if (Configuration.MaximumThreadCount < configuration.InitialThreadCount)
             {
-                _threadEnvelopes.Add(new PooledThreadEnvelope(InternalThreadProc));
+                throw new ArgumentOutOfRangeException("MaximumThreadCount must be equal or greater than InitialThreadCount.");
             }
+
+            KeepThreadPoolRunning = true;
+            _threadEnvelopes.Use(o =>
+            {
+                while (o.Count < Configuration.InitialThreadCount)
+                {
+                    o.Add(new PooledThreadEnvelope(Configuration, InternalThreadProc));
+                }
+            });
+
+            _growthMonitorTimer = new Timer(AutoGrowthMonitorCallback, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(500));
         }
 
-        /// <summary>
-        /// Defines the pool size and starts the worker threads.
-        /// </summary>
-        /// <param name="threadCount">The number of threads to create.</param>
-        public DelegateThreadPool(int threadCount)
+        private void AutoGrowthMonitorCallback(object? state)
         {
-            ThreadCount = threadCount;
-            MaxQueueDepth = 0;
-            KeepRunning = true;
+            _autoGrowthOverloadThresholdMs ??= Configuration.AutoGrowthMinimumOverloadThresholdMs;
 
-            for (int i = 0; i < ThreadCount; i++)
+            bool hasIdleThreads = _threadEnvelopes.Use(o => o.Any(o => o.State == PooledThreadState.Waiting));
+
+            int queueDepth = _actions.Use(q => q.Count);
+
+            if (ThreadCount < Configuration.MaximumThreadCount && !hasIdleThreads && queueDepth >= ThreadCount)
             {
-                _threadEnvelopes.Add(new PooledThreadEnvelope(InternalThreadProc));
+                _lastOverloadedTime ??= DateTime.UtcNow;
+
+                if ((DateTime.UtcNow - _lastOverloadedTime.Value).TotalMilliseconds > _autoGrowthOverloadThresholdMs)
+                {
+                    _lastOverloadedTime = null;
+
+                    if (ThreadCount < Configuration.MaximumThreadCount)
+                    {
+                        _threadEnvelopes.Use(o => o.Add(new PooledThreadEnvelope(Configuration, InternalThreadProc)));
+
+                        // Increase threshold for next time (with cap)
+                        _autoGrowthOverloadThresholdMs = Math.Min(
+                            _autoGrowthOverloadThresholdMs.Value * Configuration.AutoGrowthOverloadDurationGrowthFactor,
+                            Configuration.AutoGrowthMaximumOverloadThresholdMs
+                        );
+                    }
+                }
+            }
+            else if (_lastOverloadedTime != null)
+            {
+                // Reset on stability.
+                _lastOverloadedTime = null;
+                _autoGrowthOverloadThresholdMs = Configuration.AutoGrowthMinimumOverloadThresholdMs;
+            }
+
+            //Auto-shrink:
+            // --- Auto Shrink ---
+            if (ThreadCount > Configuration.InitialThreadCount && hasIdleThreads && queueDepth == 0)
+            {
+                _lastUnderloadTime ??= DateTime.UtcNow;
+
+                if ((DateTime.UtcNow - _lastUnderloadTime.Value).TotalMilliseconds > Configuration.AutoShrinkUnderloadThresholdMs)
+                {
+                    _lastUnderloadTime = null;
+
+                    _threadEnvelopes.Use(o =>
+                    {
+                        var idleThread = o.LastOrDefault(t => t.State == PooledThreadState.Waiting);
+                        if (idleThread != null)
+                        {
+                            idleThread.Shutdown();
+                            o.Remove(idleThread);
+                        }
+                    });
+                }
+            }
+            else
+            {
+                _lastUnderloadTime = null;
             }
         }
 
@@ -162,28 +211,27 @@ namespace NTDLS.DelegateThreadPooling
         private QueueItemState<T> EnqueueInternalNonParameterized<T>(ThreadActionDelegate threadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
             //Enforce max queue depth size.
-            if (MaxQueueDepth > 0)
+            if (Configuration.MaximumQueueDepth > 0)
             {
                 uint tryCount = 0;
 
-                while (KeepRunning)
+                while (KeepThreadPoolRunning)
                 {
-                    int queueSize = _actions.Use(o => o.Count);
-                    if (queueSize < MaxQueueDepth)
+                    if (_actions.Use(o => o.Count) < Configuration.MaximumQueueDepth)
                     {
                         break;
                     }
 
-                    if (tryCount++ == SpinCount)
+                    if (tryCount++ == Configuration.SpinCount)
                     {
                         tryCount = 0;
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
-                        ItemDequeuedWaitEvent.WaitOne(WaitDuration);
+                        ItemDequeuedWaitEvent.WaitOne(Configuration.WaitDuration);
                     }
                 }
 
-                if (KeepRunning == false)
+                if (KeepThreadPoolRunning == false)
                 {
                     throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
                 }
@@ -235,28 +283,28 @@ namespace NTDLS.DelegateThreadPooling
             ParameterizedThreadActionDelegate<T> parameterizedThreadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
             //Enforce max queue depth size.
-            if (MaxQueueDepth > 0)
+            if (Configuration.MaximumQueueDepth > 0)
             {
                 uint tryCount = 0;
 
-                while (KeepRunning)
+                while (KeepThreadPoolRunning)
                 {
                     int queueSize = _actions.Use(o => o.Count);
-                    if (queueSize < MaxQueueDepth)
+                    if (queueSize < Configuration.MaximumQueueDepth)
                     {
                         break;
                     }
 
-                    if (tryCount++ == SpinCount)
+                    if (tryCount++ == Configuration.SpinCount)
                     {
                         tryCount = 0;
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
-                        ItemDequeuedWaitEvent.WaitOne(WaitDuration);
+                        ItemDequeuedWaitEvent.WaitOne(Configuration.WaitDuration);
                     }
                 }
 
-                if (KeepRunning == false)
+                if (KeepThreadPoolRunning == false)
                 {
                     throw new DelegateThreadPoolShuttingDown("The thread pool is shutting down.");
                 }
@@ -299,9 +347,9 @@ namespace NTDLS.DelegateThreadPooling
 
         private void SignalIdleThread()
         {
-                //Find the first idle thread and signal it. Its ok if we don't find one, because the first
-                //  thread to complete its workload will automatically pickup the next item in the queue.
-                _threadEnvelopes.Where(o => o.State == PooledThreadState.Waiting).FirstOrDefault()?.Signal();
+            //Find the first idle thread and signal it. Its ok if we don't find one, because the first
+            //  thread to complete its workload will automatically pickup the next item in the queue.
+            _threadEnvelopes.Use(o => o.FirstOrDefault(o => o.State == PooledThreadState.Waiting))?.Signal();
         }
 
         /// <summary>
@@ -319,15 +367,21 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         public void Stop()
         {
-            if (KeepRunning)
+            if (KeepThreadPoolRunning)
             {
-                KeepRunning = false;
-                _threadEnvelopes.ForEach(o =>
+                KeepThreadPoolRunning = false;
+
+                _growthMonitorTimer.Dispose();
+
+                _threadEnvelopes.Use(envelopes =>
                 {
-                    o.Signal();
-                    o.Join();
+                    envelopes.ForEach(o =>
+                    {
+                        o.Signal();
+                        o.Join();
+                    });
+                    envelopes.Clear();
                 });
-                _threadEnvelopes.Clear();
             }
         }
 
@@ -347,6 +401,12 @@ namespace NTDLS.DelegateThreadPooling
 
             var threadEnvelope = (PooledThreadEnvelope)internalThreadObj;
 
+            threadEnvelope.KeepThreadRunning = true;
+
+#if DEBUG
+            Thread.CurrentThread.Name = $"InternalThreadProc_{threadEnvelope.ManagedThread.ManagedThreadId}";
+#endif
+
             #region Diagnostics.
 
             int nativeThreadId = GetCurrentThreadId();
@@ -363,7 +423,7 @@ namespace NTDLS.DelegateThreadPooling
             #endregion
 
             uint tryDequeueCount = 0;
-            while (KeepRunning)
+            while (KeepThreadPoolRunning && threadEnvelope.KeepThreadRunning)
             {
                 var itemState = _actions.Use(o =>
                 {
@@ -380,8 +440,12 @@ namespace NTDLS.DelegateThreadPooling
                     return dequeued;
                 });
 
-                if (KeepRunning && itemState != null)
+                //We do not check KeepThreadRunning here, because if we dequeued an item then
+                //  we need to process it even if the individual worker is going to shutdown.
+                if (KeepThreadPoolRunning && itemState != null)
                 {
+                    threadEnvelope.State = PooledThreadState.Executing;
+
                     var startTotalProcessorTime = threadEnvelope.NativeThread?.TotalProcessorTime;
 
                     try
@@ -389,7 +453,6 @@ namespace NTDLS.DelegateThreadPooling
                         if (itemState.ThreadAction != null)
                         {
                             itemState.StartTimestamp = DateTime.UtcNow;
-
                             itemState.ThreadAction();
                         }
                         else if (itemState.ParameterizedThreadAction != null)
@@ -415,23 +478,26 @@ namespace NTDLS.DelegateThreadPooling
                     {
                         itemState.SetException(ex);
                     }
+                    finally
+                    {
+                        //The thread has finished working on the dequeued item.
 
-                    itemState.SetComplete(threadEnvelope.NativeThread?.TotalProcessorTime - startTotalProcessorTime);
+                        itemState.SetComplete(threadEnvelope.NativeThread?.TotalProcessorTime - startTotalProcessorTime);
 
-                    tryDequeueCount = 0; //Reset the spin count if the thread dequeued an item.
+                        threadEnvelope.State = PooledThreadState.Waiting;
+                        tryDequeueCount = 0; //Reset the spin count if the thread dequeued an item.
+                    }
                 }
-                else if (KeepRunning && tryDequeueCount++ >= SpinCount)
+                else if (KeepThreadPoolRunning && tryDequeueCount++ >= Configuration.SpinCount)
                 {
                     //We have tried to dequeue too many times without success, just sleep.
-
-                    threadEnvelope.State = PooledThreadState.Waiting;
                     if (threadEnvelope.Wait())
                     {
-                        threadEnvelope.State = PooledThreadState.Executing;
-                        tryDequeueCount = 0; //Rest the spin count if the thread was signaled.
+                        tryDequeueCount = 0; //Reset the spin count if the thread was signaled.
                     }
                 }
             }
+
         }
 
         /// <summary>
