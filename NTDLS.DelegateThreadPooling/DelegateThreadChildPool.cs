@@ -17,12 +17,12 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// The total processing duration of all workers in this queue.
         /// </summary>
-        public double TotalDuration { get; private set; }
+        public double TotalDurationMs { get; private set; }
 
         /// <summary>
         /// The total CPU time expended for of all workers in this queue.
         /// </summary>
-        public double TotalProcessorTime { get; private set; }
+        public double TotalProcessorTimeMs { get; private set; }
 
         /// <summary>
         /// The maximum number of items that can be in the trackable queue at a time. Additional calls to enqueue will block.
@@ -79,8 +79,8 @@ namespace NTDLS.DelegateThreadPooling
             var completedItems = _collection.Where(o => o.IsComplete == true).ToList();
             if (completedItems.Count > 0)
             {
-                TotalDuration += completedItems.Sum(o => o.CompletionTime?.TotalMilliseconds ?? 0);
-                TotalProcessorTime += completedItems.Sum(o => o.ProcessorTime?.TotalMilliseconds ?? 0);
+                TotalDurationMs += completedItems.Sum(o => o.CompletionTime?.TotalMilliseconds ?? 0);
+                TotalProcessorTimeMs += completedItems.Sum(o => o.ProcessorTime?.TotalMilliseconds ?? 0);
             }
             _collection.RemoveAll(o => o.IsComplete == true);
         }

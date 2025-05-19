@@ -8,12 +8,12 @@
         /// <summary>
         /// Initial number of threads to spawn as instantiation.
         /// </summary>
-        public int InitialThreadCount { get; set; } = Environment.ProcessorCount >= 4 ? 4 : 2;
+        public int InitialThreadCount { get; set; } = Environment.ProcessorCount;
 
         /// <summary>
         /// The maximum number of threads to spawn upon thread pool exhaustion.
         /// </summary>
-        public int MaximumThreadCount { get; set; } = Environment.ProcessorCount;
+        public int MaximumThreadCount { get; set; } = Environment.ProcessorCount * 4;
 
         /// <summary>
         /// Priority of the worker threads in the pool. Use anything above Normal with extreme caution.

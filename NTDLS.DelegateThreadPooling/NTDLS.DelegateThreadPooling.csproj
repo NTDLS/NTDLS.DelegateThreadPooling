@@ -19,11 +19,11 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.DelegateThreadPooling</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>serialization;disk;persistence</PackageTags>
+    <PackageTags>Thread;paralellisim;thread-pool;task</PackageTags>
     <PackageReleaseNotes>
       Removed icon.
     </PackageReleaseNotes>
-    <Version>1.5.14</Version>
+    <Version>2.0.00</Version>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>Very high-performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
   </PropertyGroup>

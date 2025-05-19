@@ -18,13 +18,18 @@ namespace NTDLS.DelegateThreadPooling
         /// QueueItemStates to reduce handle count at the slight tradeoff to extra completion checks.
         /// </summary>
         internal readonly AutoResetEvent QueueItemStateCompletion = new(false);
-        internal DelegateThreadPoolConfiguration Configuration { get; private set; }
+        internal readonly DelegateThreadPoolConfiguration Configuration;
+        internal readonly AutoResetEvent ItemDequeuedWaitEvent = new(true);
+
+        internal bool KeepThreadPoolRunning { get; private set; } = false;
 
         private static readonly ConcurrentDictionary<Type, MethodInfo> _reflectionCache = new();
         private readonly Timer _growthMonitorTimer;
         private DateTime? _lastOverloadedTime = null;
         private DateTime? _lastUnderloadTime = null;
         private int? _autoGrowthOverloadThresholdMs = null;
+        private readonly PessimisticCriticalResource<List<PooledThreadEnvelope>> _threadEnvelopes = new();
+        private readonly PessimisticCriticalResource<Queue<IQueueItemState>> _actions = new();
 
         /// <summary>
         /// The delegate prototype for the work queue.
@@ -54,21 +59,16 @@ namespace NTDLS.DelegateThreadPooling
         /// <param name="parameter">The user supplied parameter that will be passed to the delegate function.</param>
         public delegate void ParameterizedThreadActionDelegate<T>(T parameter);
 
-        private readonly PessimisticCriticalResource<List<PooledThreadEnvelope>> _threadEnvelopes = new();
-
         /// <summary>
         /// Provides read-only access to threads in the thread pool for diagnostics and performance reporting.
         /// </summary>
         public IReadOnlyList<PooledThreadEnvelope> Threads { get => _threadEnvelopes.Use(o => o); }
 
         /// <summary>
-        /// The number of threads in the thread pool.
+        /// The current number of threads in the thread pool.
         /// </summary>
         public int ThreadCount { get => _threadEnvelopes.Use(o => o.Count); }
 
-        private readonly PessimisticCriticalResource<Queue<IQueueItemState>> _actions = new();
-        internal AutoResetEvent ItemDequeuedWaitEvent { get; private set; } = new(true);
-        internal bool KeepThreadPoolRunning { get; private set; } = false;
 
         /// <summary>
         /// Starts n worker threads, where n is the number of CPU cores available to the operating system.
@@ -86,7 +86,7 @@ namespace NTDLS.DelegateThreadPooling
                 }
             });
 
-            _growthMonitorTimer = new Timer(AutoGrowthMonitorCallback, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(500));
+            _growthMonitorTimer = new Timer(AutoGrowthMonitorCallback, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(100));
         }
 
         /// <summary>
@@ -116,7 +116,7 @@ namespace NTDLS.DelegateThreadPooling
                 }
             });
 
-            _growthMonitorTimer = new Timer(AutoGrowthMonitorCallback, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(500));
+            _growthMonitorTimer = new Timer(AutoGrowthMonitorCallback, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(100));
         }
 
         private void AutoGrowthMonitorCallback(object? state)
