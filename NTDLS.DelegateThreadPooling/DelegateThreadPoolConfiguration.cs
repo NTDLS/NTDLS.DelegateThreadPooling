@@ -50,12 +50,12 @@
         /// Each time the thread-pool is grown, the threshold milliseconds is multiplied by this value.
         /// Once overload conditions flatten, the threshold is reduced back to the minimum value.
         /// </summary>
-        public int AutoGrowthOverloadDurationGrowthFactor = 2;
+        public int AutoGrowthOverloadDurationGrowthFactor { get; set; } = 2;
 
         /// <summary>
         /// The high-end-range of time to allow the queue to be overloaded before growing the thread-pool.
         /// </summary>
-        public int AutoGrowthMaximumOverloadThresholdMs = 6400;
+        public int AutoGrowthMaximumOverloadThresholdMs { get; set; } = 6400;
 
         /// <summary>
         /// The amount of time that the queue must be idle before reducing the number of threads in the pool
