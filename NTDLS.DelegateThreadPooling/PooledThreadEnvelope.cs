@@ -53,7 +53,13 @@ namespace NTDLS.DelegateThreadPooling
         internal void Signal() => WaitEvent.Set();
 
         /// <summary>
-        /// Wait for small timeout or dequeue event.
+        /// Wait for timeout or dequeue event.
+        /// </summary>
+        /// <returns></returns>
+        internal bool Wait(TimeSpan timeout) => WaitEvent.WaitOne(timeout);
+
+        /// <summary>
+        /// Wait for dequeue event.
         /// </summary>
         /// <returns></returns>
         internal bool Wait() => WaitEvent.WaitOne();

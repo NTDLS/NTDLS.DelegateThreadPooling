@@ -7,7 +7,7 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// The UTC date/time which the thread worker started.
         /// </summary>
-        public DateTime StartTimestamp { get; internal set; }
+        DateTime StartTimestamp { get; set; }
 
         object? Parameter { get; }
 
