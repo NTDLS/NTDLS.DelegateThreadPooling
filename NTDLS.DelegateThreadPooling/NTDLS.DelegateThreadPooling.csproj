@@ -21,7 +21,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>Thread;paralellisim;thread-pool;task</PackageTags>
     <PackageReleaseNotes>
-      Removed icon.
+      Fixes to thread pool queue depth override check.
     </PackageReleaseNotes>
     <Version>2.0.1</Version>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
