@@ -210,7 +210,7 @@ namespace NTDLS.DelegateThreadPooling
                     tryCount = 0;
                     OwnerThreadPool.QueueItemStateCompletion.WaitOne(OwnerThreadPool.Configuration.WaitDuration);
 
-                    if ((DateTime.UtcNow - lastUpdate).TotalMilliseconds > updateDelay.Milliseconds)
+                    if ((DateTime.UtcNow - lastUpdate).TotalMilliseconds > updateDelay.TotalMilliseconds)
                     {
                         if (periodicUpdateAction() == false)
                         {

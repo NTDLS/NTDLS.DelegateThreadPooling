@@ -105,7 +105,8 @@ namespace NTDLS.DelegateThreadPooling
 
                 while (_threadPool.KeepThreadPoolRunning)
                 {
-                    if (_currentQueueDepth < MaxChildQueueDepth && _currentQueueDepth < _threadPool.Configuration.MaximumQueueDepth)
+                    if (_currentQueueDepth < MaxChildQueueDepth
+                        && (_currentQueueDepth < _threadPool.Configuration.MaximumQueueDepth || _threadPool.Configuration.MaximumQueueDepth == 0))
                     {
                         break;
                     }
@@ -161,7 +162,8 @@ namespace NTDLS.DelegateThreadPooling
 
                 while (_threadPool.KeepThreadPoolRunning)
                 {
-                    if (_currentQueueDepth < MaxChildQueueDepth && _currentQueueDepth < _threadPool.Configuration.MaximumQueueDepth)
+                    if (_currentQueueDepth < MaxChildQueueDepth
+                        && (_currentQueueDepth < _threadPool.Configuration.MaximumQueueDepth || _threadPool.Configuration.MaximumQueueDepth == 0))
                     {
                         break;
                     }
