@@ -21,9 +21,9 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>Thread;paralellisim;thread-pool;task</PackageTags>
     <PackageReleaseNotes>
-      Fixes to thread pool queue depth override check.
+      Dependency updates.
     </PackageReleaseNotes>
-    <Version>2.0.2</Version>
+    <Version>2.0.3</Version>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
     <Description>Very high-performance active thread pool where work items can be queued as delegate functions. Allows you to easily enqueue infinite FIFO worker items or enforce queue size, wait on collections of those items to complete, and total control over the pool size. Also allows for multiple pools, so that different workloads do not interfere with one another.</Description>
   </PropertyGroup>
@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NTDLS.Semaphore" Version="3.5.2" />
+    <PackageReference Include="NTDLS.Semaphore" Version="3.5.3" />
   </ItemGroup>
 
 </Project>
