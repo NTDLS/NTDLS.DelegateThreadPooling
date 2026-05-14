@@ -43,7 +43,7 @@
         /// <summary>
         /// The low-end-range of time to allow the queue to be overloaded before growing the thread-pool.
         /// </summary>
-        public int AutoGrowthMinimumOverloadThresholdMs = 100;
+        public int AutoGrowthMinimumOverloadThresholdMs { get; set; } = 100;
 
         /// <summary>
         /// The multiplier for the Auto-Growth Overload Threshold.
