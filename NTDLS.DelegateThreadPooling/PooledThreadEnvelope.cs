@@ -30,7 +30,8 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// Whether the thread should remain running.
         /// </summary>
-        internal bool KeepThreadRunning { get; set; }
+        public bool KeepThreadRunning { get => _keepThreadRunningtate; internal set => _keepThreadRunningtate = value; }
+        private volatile bool _keepThreadRunningtate;
 
         /// <summary>
         /// Native process thread which is used to execute workloads.
@@ -45,7 +46,8 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// Current execution state of the thread.
         /// </summary>
-        public PooledThreadState State { get; set; }
+        public PooledThreadState State { get => _state; internal set => _state = value; }
+        private volatile PooledThreadState _state;
 
         /// <summary>
         /// Tell the thread to check the queue.

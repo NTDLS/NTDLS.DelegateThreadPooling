@@ -10,7 +10,8 @@ namespace NTDLS.DelegateThreadPooling
     /// <summary>
     /// Creates an active thread pool where work items can be queued as delegate functions.
     /// </summary>
-    public class DelegateThreadPool : IDisposable
+    public class DelegateThreadPool
+        : IDisposable
     {
         /// <summary>
         /// Used for the QueueItemStates to signal their completion.
@@ -21,7 +22,7 @@ namespace NTDLS.DelegateThreadPooling
         internal readonly DelegateThreadPoolConfiguration Configuration;
         internal readonly AutoResetEvent ItemDequeuedWaitEvent = new(true);
 
-        internal bool KeepThreadPoolRunning { get; private set; } = false;
+        internal volatile bool KeepThreadPoolRunning = false;
 
         private static readonly ConcurrentDictionary<Type, MethodInfo> _reflectionCache = new();
         private readonly Timer _growthMonitorTimer;
@@ -99,12 +100,12 @@ namespace NTDLS.DelegateThreadPooling
 
             if (Configuration.MaximumQueueDepth < 0)
             {
-                throw new ArgumentOutOfRangeException("MaximumQueueDepth must be equal or greater than 0.");
+                throw new ArgumentOutOfRangeException(nameof(configuration), "MaximumQueueDepth must be equal or greater than 0.");
             }
 
             if (Configuration.MaximumThreadCount < configuration.InitialThreadCount)
             {
-                throw new ArgumentOutOfRangeException("MaximumThreadCount must be equal or greater than InitialThreadCount.");
+                throw new ArgumentOutOfRangeException(nameof(configuration), "MaximumThreadCount must be equal or greater than InitialThreadCount.");
             }
 
             KeepThreadPoolRunning = true;
@@ -210,6 +211,8 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns>Returns a state item that allows you to wait on completion or determine when the work item has been processed</returns>
         private QueueItemState<T> EnqueueInternalNonParameterized<T>(ThreadActionDelegate threadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
+            ArgumentNullException.ThrowIfNull(threadAction);
+
             //Enforce max queue depth size.
             if (Configuration.MaximumQueueDepth > 0)
             {
@@ -254,6 +257,8 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns>Returns a state item that allows you to wait on completion or determine when the work item has been processed</returns>
         public QueueItemState<T> Enqueue<T>(ThreadActionDelegate threadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
+            ArgumentNullException.ThrowIfNull(threadAction);
+
             return EnqueueInternalNonParameterized<T>(threadAction, onComplete);
         }
 
@@ -265,6 +270,8 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns>Returns a state item that allows you to wait on completion or determine when the work item has been processed</returns>
         public QueueItemState<object> Enqueue(ThreadActionDelegate threadAction, ThreadCompleteActionDelegate<object>? onComplete = null)
         {
+            ArgumentNullException.ThrowIfNull(threadAction);
+
             return EnqueueInternalNonParameterized<object>(threadAction, onComplete);
         }
 
@@ -282,6 +289,8 @@ namespace NTDLS.DelegateThreadPooling
         private QueueItemState<T> EnqueueInternalParameterized<T>(T? parameter,
             ParameterizedThreadActionDelegate<T> parameterizedThreadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
+            ArgumentNullException.ThrowIfNull(parameterizedThreadAction);
+
             //Enforce max queue depth size.
             if (Configuration.MaximumQueueDepth > 0)
             {
@@ -328,6 +337,8 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns>Returns a state item that allows you to wait on completion or determine when the work item has been processed</returns>
         public QueueItemState<T> Enqueue<T>(T? parameter, ParameterizedThreadActionDelegate<T> parameterizedThreadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
+            ArgumentNullException.ThrowIfNull(parameterizedThreadAction);
+
             return EnqueueInternalParameterized(parameter, parameterizedThreadAction, onComplete);
         }
 
@@ -340,6 +351,8 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns>Returns a state item that allows you to wait on completion or determine when the work item has been processed</returns>
         public QueueItemState<object> Enqueue(object? parameter, ParameterizedThreadActionDelegate<object> parameterizedThreadAction, ThreadCompleteActionDelegate<object>? onComplete = null)
         {
+            ArgumentNullException.ThrowIfNull(parameterizedThreadAction);
+
             return EnqueueInternalParameterized(parameter, parameterizedThreadAction, onComplete);
         }
 
@@ -505,6 +518,7 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         public void Dispose()
         {
+            GC.SuppressFinalize(this);
             Stop();
         }
     }

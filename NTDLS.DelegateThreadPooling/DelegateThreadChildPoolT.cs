@@ -7,12 +7,13 @@ namespace NTDLS.DelegateThreadPooling
     /// Contains a collection of queue item states. Allows for determining when a set of queued items have been completed.
     /// </summary>
     /// <typeparam name="T">The type which will be passed for parameterized thread delegates.</typeparam>
-    public class DelegateThreadChildPool<T> : IEnumerable<QueueItemState<T>>
+    public class DelegateThreadChildPool<T>
+        : IEnumerable<QueueItemState<T>>
     {
         /// <summary>
         /// The collection of enqueued work items and their states.
         /// </summary>
-        private readonly List<QueueItemState<T>> _collection = new();
+        private readonly List<QueueItemState<T>> _collection = [];
         private readonly DelegateThreadPool _threadPool;
 
         /// <summary>
@@ -95,6 +96,9 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState<T> Enqueue(T parameter, ParameterizedThreadActionDelegate<T> parameterizedThreadAction, ThreadCompleteActionDelegate<T> onComplete)
         {
+            ArgumentNullException.ThrowIfNull(parameterizedThreadAction);
+            ArgumentNullException.ThrowIfNull(onComplete);
+
             ThrowAnyExceptions();
             RemoveCompletedQueueItemsAndTrackPerformance();
 
@@ -115,10 +119,7 @@ namespace NTDLS.DelegateThreadPooling
                     {
                         tryCount = 0;
 
-                        if (tryCount == 0)
-                        {
-                            ThrowAnyExceptions();
-                        }
+                        ThrowAnyExceptions();
 
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
@@ -134,7 +135,7 @@ namespace NTDLS.DelegateThreadPooling
 
             Interlocked.Increment(ref _currentQueueDepth);
 
-            var itemState = _threadPool.Enqueue<T>(parameter, parameterizedThreadAction, (QueueItemState<T> o) =>
+            var itemState = _threadPool.Enqueue<T>(parameter, parameterizedThreadAction, o =>
             {
                 onComplete(o);
                 Interlocked.Decrement(ref _currentQueueDepth);
@@ -152,6 +153,8 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState<T> Enqueue(T parameter, ParameterizedThreadActionDelegate<T> parameterizedThreadAction)
         {
+            ArgumentNullException.ThrowIfNull(parameterizedThreadAction);
+
             ThrowAnyExceptions();
             RemoveCompletedQueueItemsAndTrackPerformance();
 
@@ -172,10 +175,7 @@ namespace NTDLS.DelegateThreadPooling
                     {
                         tryCount = 0;
 
-                        if (tryCount == 0)
-                        {
-                            ThrowAnyExceptions();
-                        }
+                        ThrowAnyExceptions();
 
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
@@ -191,7 +191,7 @@ namespace NTDLS.DelegateThreadPooling
 
             Interlocked.Increment(ref _currentQueueDepth);
 
-            var itemState = _threadPool.Enqueue<T>(parameter, parameterizedThreadAction, (QueueItemState<T> o) =>
+            var itemState = _threadPool.Enqueue<T>(parameter, parameterizedThreadAction, o =>
             {
                 Interlocked.Decrement(ref _currentQueueDepth);
             });
@@ -298,7 +298,7 @@ namespace NTDLS.DelegateThreadPooling
                     exceptions.Add(item.Exception.GetBaseException());
                 }
             }
-            if (exceptions.Any())
+            if (exceptions.Count != 0)
             {
                 throw new AggregateException(exceptions);
             }

@@ -6,12 +6,13 @@ namespace NTDLS.DelegateThreadPooling
     /// <summary>
     /// Contains a collection of queue item states. Allows for determining when a set of queued items have been completed.
     /// </summary>
-    public class DelegateThreadChildPool : IEnumerable<QueueItemState<object>>
+    public class DelegateThreadChildPool
+        : IEnumerable<QueueItemState<object>>
     {
         /// <summary>
         /// The collection of enqueued work items and their states.
         /// </summary>
-        private readonly List<QueueItemState<object>> _collection = new();
+        private readonly List<QueueItemState<object>> _collection = [];
         private readonly DelegateThreadPool _threadPool;
 
         /// <summary>
@@ -112,10 +113,7 @@ namespace NTDLS.DelegateThreadPooling
                     {
                         tryCount = 0;
 
-                        if (tryCount == 0)
-                        {
-                            ThrowAnyExceptions();
-                        }
+                        ThrowAnyExceptions();
 
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
@@ -131,7 +129,7 @@ namespace NTDLS.DelegateThreadPooling
 
             Interlocked.Increment(ref _currentQueueDepth);
 
-            var itemState = _threadPool.Enqueue<object>(threadAction, (QueueItemState<object> o) =>
+            var itemState = _threadPool.Enqueue<object>(threadAction, o =>
             {
                 Interlocked.Decrement(ref _currentQueueDepth);
             });
@@ -148,6 +146,9 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState<object> Enqueue(ThreadActionDelegate threadAction, ThreadCompleteActionDelegate<object> onComplete)
         {
+            ArgumentNullException.ThrowIfNull(threadAction);
+            ArgumentNullException.ThrowIfNull(onComplete);
+
             ThrowAnyExceptions();
             RemoveCompletedQueueItemsAndTrackPerformance();
 
@@ -168,10 +169,7 @@ namespace NTDLS.DelegateThreadPooling
                     {
                         tryCount = 0;
 
-                        if (tryCount == 0)
-                        {
-                            ThrowAnyExceptions();
-                        }
+                        ThrowAnyExceptions();
 
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
@@ -187,7 +185,7 @@ namespace NTDLS.DelegateThreadPooling
 
             Interlocked.Increment(ref _currentQueueDepth);
 
-            var itemState = _threadPool.Enqueue<object>(threadAction, (QueueItemState<object> o) =>
+            var itemState = _threadPool.Enqueue<object>(threadAction, o =>
             {
                 onComplete(o);
                 Interlocked.Decrement(ref _currentQueueDepth);
@@ -206,6 +204,9 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState<object> Enqueue(object parameter, ParameterizedThreadActionDelegate<object> parameterizedThreadAction, ThreadCompleteActionDelegate<object> onComplete)
         {
+            ArgumentNullException.ThrowIfNull(parameterizedThreadAction);
+            ArgumentNullException.ThrowIfNull(onComplete);
+
             ThrowAnyExceptions();
             RemoveCompletedQueueItemsAndTrackPerformance();
 
@@ -226,10 +227,7 @@ namespace NTDLS.DelegateThreadPooling
                     {
                         tryCount = 0;
 
-                        if (tryCount == 0)
-                        {
-                            ThrowAnyExceptions();
-                        }
+                        ThrowAnyExceptions();
 
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
@@ -245,7 +243,7 @@ namespace NTDLS.DelegateThreadPooling
 
             Interlocked.Increment(ref _currentQueueDepth);
 
-            var itemState = _threadPool.Enqueue<object>(parameter, parameterizedThreadAction, (QueueItemState<object> o) =>
+            var itemState = _threadPool.Enqueue<object>(parameter, parameterizedThreadAction, o =>
             {
                 onComplete(o);
                 Interlocked.Decrement(ref _currentQueueDepth);
@@ -263,6 +261,8 @@ namespace NTDLS.DelegateThreadPooling
         /// <returns></returns>
         public QueueItemState<object> Enqueue(object parameter, ParameterizedThreadActionDelegate<object> parameterizedThreadAction)
         {
+            ArgumentNullException.ThrowIfNull(parameterizedThreadAction);
+
             ThrowAnyExceptions();
             RemoveCompletedQueueItemsAndTrackPerformance();
 
@@ -283,10 +283,7 @@ namespace NTDLS.DelegateThreadPooling
                     {
                         tryCount = 0;
 
-                        if (tryCount == 0)
-                        {
-                            ThrowAnyExceptions();
-                        }
+                        ThrowAnyExceptions();
 
                         //Wait for a small amount of time or until the event is signaled (which 
                         //indicates that an item has been dequeued thereby creating free space).
@@ -302,7 +299,7 @@ namespace NTDLS.DelegateThreadPooling
 
             Interlocked.Increment(ref _currentQueueDepth);
 
-            var itemState = _threadPool.Enqueue<object>(parameter, parameterizedThreadAction, (QueueItemState<object> o) =>
+            var itemState = _threadPool.Enqueue<object>(parameter, parameterizedThreadAction, o =>
             {
                 Interlocked.Decrement(ref _currentQueueDepth);
             });
@@ -409,7 +406,7 @@ namespace NTDLS.DelegateThreadPooling
                     exceptions.Add(item.Exception.GetBaseException());
                 }
             }
-            if (exceptions.Any())
+            if (exceptions.Count != 0)
             {
                 throw new AggregateException(exceptions);
             }

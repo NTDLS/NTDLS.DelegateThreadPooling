@@ -6,7 +6,8 @@ namespace NTDLS.DelegateThreadPooling
     /// Contains information to track the state of an enqueued worker item and allows for waiting on it to complete.
     /// </summary>
     /// <typeparam name="T">The type which will be passed for parameterized thread delegates.</typeparam>
-    public class QueueItemState<T> : IQueueItemState
+    public class QueueItemState<T>
+        : IQueueItemState
     {
         /// <summary>
         /// A name that can be assigned to the thread state object for tracking by the user.
@@ -66,25 +67,31 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// Denotes if the queued work item has been completed.
         /// </summary>
-        public bool IsComplete { get; private set; }
+        public bool IsComplete { get => _isComplete; private set => _isComplete = value; }
+        private volatile bool _isComplete;
 
         /// <summary>
         /// Denotes if the queued work item was aborted before it was finished.
         /// </summary>
-        public bool WasAborted { get; private set; }
+        public bool WasAborted { get => _wasAborted; private set => _wasAborted = value; }
+        private volatile bool _wasAborted;
 
         /// <summary>
         /// Is set to true if an exception occurred when executing the delegate command. Check Exception for details.
         /// </summary>
-        public bool ExceptionOccurred { get; private set; }
+        public bool ExceptionOccurred { get => _exceptionOccurred; private set => _exceptionOccurred = value; }
+        private volatile bool _exceptionOccurred;
 
         /// <summary>
         /// Is set if an exception occurred when executing the delegate command, otherwise null.
         /// </summary>
-        public Exception? Exception { get; private set; }
+        public Exception? Exception { get => _exception; private set => _exception = value; }
+        private volatile Exception? _exception;
 
         internal QueueItemState(DelegateThreadPool ownerThreadPool, ThreadActionDelegate threadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
+            ArgumentNullException.ThrowIfNull(threadAction);
+
             Parameter = null;
             OwnerThreadPool = ownerThreadPool;
             ThreadAction = threadAction;
@@ -93,6 +100,8 @@ namespace NTDLS.DelegateThreadPooling
 
         internal QueueItemState(DelegateThreadPool ownerThreadPool, object? parameter, ParameterizedThreadActionDelegate<T> parameterizedThreadAction, ThreadCompleteActionDelegate<T>? onComplete = null)
         {
+            ArgumentNullException.ThrowIfNull(parameterizedThreadAction);
+
             Parameter = parameter;
             OwnerThreadPool = ownerThreadPool;
             ParameterizedThreadAction = parameterizedThreadAction;
