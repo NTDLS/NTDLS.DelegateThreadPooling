@@ -414,7 +414,7 @@ namespace NTDLS.DelegateThreadPooling
         {
             if (internalThreadObj == null)
             {
-                throw new Exception("Thread manager was not supplied to internal thread proc.");
+                throw new InvalidOperationException("Thread manager was not supplied to internal thread proc.");
             }
 
             var threadEnvelope = (PooledThreadEnvelope)internalThreadObj;
