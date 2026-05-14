@@ -6,10 +6,14 @@ namespace PerformanceTest
     {
         static void Main()
         {
+            Console.WriteLine("Starting DelegateThreadPool performance test...");
+
             var configuration = new DelegateThreadPoolConfiguration();
             var dtp = new DelegateThreadPool(configuration);
 
             var childPool = dtp.CreateChildPool();
+
+            Console.WriteLine("Enqueuing work items...");
 
             for (int item = 0; item < 100000; item++)
             {
@@ -26,6 +30,8 @@ namespace PerformanceTest
                 });
             }
 
+            Console.WriteLine("All items enqueued, waiting for completion...");
+
             childPool.WaitForCompletion();
 
             Console.WriteLine($"Start Thread Count: {configuration.InitialThreadCount}, Final: {dtp.ThreadCount:n0}");
@@ -38,7 +44,6 @@ namespace PerformanceTest
             }
 
             dtp.Stop();
-
         }
     }
 }
