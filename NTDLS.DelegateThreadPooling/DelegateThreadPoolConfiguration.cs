@@ -31,7 +31,7 @@
         public int MaximumQueueDepth { get; set; } = 0;
 
         /// <summary>
-        /// The number of times to repeatedly check the internal lock availability before going to going to sleep.
+        /// The number of times to repeatedly check the internal lock availability before going to sleep.
         /// </summary>
         public int SpinCount { get; set; } = 100;
 

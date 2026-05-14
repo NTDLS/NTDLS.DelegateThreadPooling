@@ -22,13 +22,15 @@ namespace NTDLS.DelegateThreadPooling
         internal readonly DelegateThreadPoolConfiguration Configuration;
         internal readonly AutoResetEvent ItemDequeuedWaitEvent = new(true);
 
-        internal volatile bool KeepThreadPoolRunning = false;
+        internal bool KeepThreadPoolRunning {get => _keepThreadPoolRunning; private set => _keepThreadPoolRunning = value;}
 
+        private volatile bool _keepThreadPoolRunning = false;
         private static readonly ConcurrentDictionary<Type, MethodInfo> _reflectionCache = new();
         private readonly Timer _growthMonitorTimer;
         private DateTime? _lastOverloadedTime = null;
         private DateTime? _lastUnderloadTime = null;
         private int? _autoGrowthOverloadThresholdMs = null;
+        private bool disposedValue;
         private readonly PessimisticCriticalResource<List<PooledThreadEnvelope>> _threadEnvelopes = new();
         private readonly PessimisticCriticalResource<Queue<IQueueItemState>> _actions = new();
 
@@ -172,6 +174,7 @@ namespace NTDLS.DelegateThreadPooling
                         {
                             idleThread.Shutdown();
                             o.Remove(idleThread);
+                            idleThread.Dispose();
                         }
                     });
                 }
@@ -376,7 +379,8 @@ namespace NTDLS.DelegateThreadPooling
         }
 
         /// <summary>
-        /// Stops the threads in the pool after they are all complete. This is also called by Dispose();
+        /// Stops the threads in the pool after they are all complete.
+        /// This is also called by Dispose();
         /// </summary>
         public void Stop()
         {
@@ -392,6 +396,7 @@ namespace NTDLS.DelegateThreadPooling
                     {
                         o.Signal();
                         o.Join();
+                        o.Dispose();
                     });
                     envelopes.Clear();
                 });
@@ -514,12 +519,33 @@ namespace NTDLS.DelegateThreadPooling
         }
 
         /// <summary>
+        /// Disposes the instance.
         /// Stops the threads in the pool after they are all complete.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    QueueItemStateCompletion.Dispose();
+                    ItemDequeuedWaitEvent.Dispose();
+
+                    Stop();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        /// <summary>
+        /// Disposes the instance.
         /// </summary>
         public void Dispose()
         {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
             GC.SuppressFinalize(this);
-            Stop();
         }
     }
 }

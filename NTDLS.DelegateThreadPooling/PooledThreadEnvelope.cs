@@ -6,6 +6,7 @@ namespace NTDLS.DelegateThreadPooling
     /// Worker thread envelope used for managing and interrogating thread states.
     /// </summary>
     public class PooledThreadEnvelope
+        : IDisposable
     {
         /// <summary>
         /// State of thread.
@@ -48,6 +49,7 @@ namespace NTDLS.DelegateThreadPooling
         /// </summary>
         public PooledThreadState State { get => _state; internal set => _state = value; }
         private volatile PooledThreadState _state;
+        private bool disposedValue;
 
         /// <summary>
         /// Tell the thread to check the queue.
@@ -90,6 +92,32 @@ namespace NTDLS.DelegateThreadPooling
             };
 
             ManagedThread.Start(this);
+        }
+
+        /// <summary>
+        /// Disposes the instance.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    WaitEvent.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        /// <summary>
+        /// Disposes the instance.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
