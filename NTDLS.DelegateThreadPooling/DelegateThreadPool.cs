@@ -403,8 +403,16 @@ namespace NTDLS.DelegateThreadPooling
             }
         }
 
-        [DllImport("kernel32.dll")]
-        private static extern int GetCurrentThreadId();
+        [DllImport("kernel32.dll", EntryPoint = "GetCurrentThreadId")]
+        private static extern int GetCurrentThreadIdWindows();
+
+        [DllImport("libc", EntryPoint = "gettid")]
+        private static extern int GetCurrentThreadIdLinux();
+
+        private static int GetCurrentThreadId()
+            => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? GetCurrentThreadIdWindows()
+                : GetCurrentThreadIdLinux();
 
         /// <summary>
         /// Executes the enqueued delegates, both parameterized and non-parameterized.
