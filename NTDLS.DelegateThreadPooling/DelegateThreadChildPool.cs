@@ -395,11 +395,27 @@ namespace NTDLS.DelegateThreadPooling
         /// <summary>
         /// Throws an aggregate exception for any and all exceptions which occurred in the queue.
         /// </summary>
+        /// <remarks>
+        /// Each exception is thrown once: the items that threw are removed from the queue as they are reported. They
+        /// would otherwise stay in it for good (completed items are only removed after this check, which throws first),
+        /// and every later Enqueue or WaitForCompletion would throw the same exceptions again.
+        /// </remarks>
         /// <exception cref="AggregateException"></exception>
         public void ThrowAnyExceptions()
         {
+            //Only items that have finished: a thread records its exception just before it marks the item complete.
+            var faulted = _collection.Where(o => o.ExceptionOccurred && o.IsComplete).ToList();
+            if (faulted.Count == 0)
+            {
+                return;
+            }
+
+            TotalDurationMs += faulted.Sum(o => o.CompletionTime?.TotalMilliseconds ?? 0);
+            TotalProcessorTimeMs += faulted.Sum(o => o.ProcessorTime?.TotalMilliseconds ?? 0);
+            _collection.RemoveAll(o => faulted.Contains(o));
+
             var exceptions = new List<Exception>();
-            foreach (var item in _collection.Where(o => o.ExceptionOccurred))
+            foreach (var item in faulted)
             {
                 if (item.Exception != null)
                 {
